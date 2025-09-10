@@ -115,6 +115,8 @@ async def log_activity(activity: Activity):
         credits_earned = 80
         co2_saved = 0.8
 
+        print("fucking")
+
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor(dictionary=True)
