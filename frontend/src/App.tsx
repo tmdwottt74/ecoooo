@@ -2,11 +2,19 @@ import React from 'react';
 import './App.css';
 import Chat from './Chat';
 import Dashboard from './Dashboard';
+import NewsTicker from './NewsTicker';
 
 // Placeholder for logo, can be replaced with an actual SVG or image
 const Logo = () => <h1 className="logo">SAMPLE ENERGY</h1>;
 
 function App() {
+  const newsItems = [
+    { id: 1, text: "오늘의 에너지 절약 팁: 사용하지 않는 플러그는 뽑아두세요!" },
+    { id: 2, text: "Ecoo 챗봇과 함께 탄소 발자국을 줄여보세요." },
+    { id: 3, text: "새로운 친환경 캠페인에 참여하고 에코 크레딧을 받으세요!" },
+    { id: 4, text: "미래를 위한 지속 가능한 에너지, Ecoo와 함께 만들어가요." },
+  ];
+
   return (
     <div className="App">
       <header className="main-header">
@@ -27,13 +35,8 @@ function App() {
       <main>
         <section id="hero" className="hero-section">
           <div className="hero-content">
-            <h2>TOMORROW'S ENERGY</h2>
-            <h1>WE'RE RECHARGING</h1>
-            <p>고객의 가치를 최우선으로 실현하는 최고의 전문성을 가진 파트너</p>
-            <div className="hero-buttons">
-              <button className="btn btn-outline">제품문의</button>
-              <button className="btn btn-outline">고객센터</button>
-            </div>
+            #메인 세션
+            <NewsTicker news={newsItems} />
           </div>
           <div className="hero-bg"></div>
         </section>
