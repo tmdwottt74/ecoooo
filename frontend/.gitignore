@@ -21,3 +21,7 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Git이 무시할 파일 목록
+__pycache__/
+*.pyc
