@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import MyGarden from './MyGarden';
 
 // This should match the Pydantic model in the backend
 interface DashboardData {
@@ -75,6 +76,7 @@ const Dashboard = () => {
     if (data) {
       return (
         <>
+          {data && <MyGarden totalCarbonReduced={data.co2_saved_today} />}
           <div className="dashboard-grid">
             <div className="card">
               <h4>오늘 절약한 탄소</h4>
