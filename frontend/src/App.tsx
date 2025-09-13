@@ -87,9 +87,8 @@ function App() {
         <div className="container">
             <Logo />
             <div className="footer-info">
-                <p>경기 부천시 원미구 신흥로 223 신중동역 랜드마크 푸르지오 시티 101동 오피스 49층 | 상호 : 샤이닝 | 대표 : 오성민</p>
-                <p>사업자 번호 : 130-37-46318 | 통신판매업종신고 : 제2010-경기부천-924호</p>
-                <p>대표번호: 1554-6062 | 팩스 : 0505-200-6060 | 이메일 : hdweb@hdweb.co.kr</p>
+              
+                <p> 서울시 AI 해커톤 8팀 충무로팀: 송인섭, 김규리, 이승재</p>
             </div>
             <p className="copyright">© SHINING All rights reserved.</p>
         </div>
