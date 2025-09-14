@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-// Define the structure of a message
+// 메시지 구조 정의
 interface Message {
   sender: 'user' | 'bot';
   text: string;
@@ -14,21 +14,21 @@ const Chat = () => {
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
-    // Add user's message to the chat
+    // 사용자의 메시지를 채팅에 추가
     const userMessage: Message = { sender: 'user', text: inputValue };
     setMessages(prevMessages => [...prevMessages, userMessage]);
     setInputValue('');
     setIsLoading(true);
 
     try {
-      // Send message to the FastAPI backend
+      // FastAPI 백엔드로 메시지 전송
       const response = await fetch('http://127.0.0.1:8000/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          user_id: 'prototype_user', // Using a fixed user_id for the prototype
+          user_id: 'prototype_user', // 프로토타입을 위해 고정된 user_id 사용
           message: inputValue,
         }),
       });
@@ -39,7 +39,7 @@ const Chat = () => {
 
       const data = await response.json();
       
-      // Add bot's response to the chat
+      // 봇의 응답을 채팅에 추가
       const botMessage: Message = { sender: 'bot', text: data.response_message };
       setMessages(prevMessages => [...prevMessages, botMessage]);
 

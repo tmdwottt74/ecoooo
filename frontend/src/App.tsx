@@ -4,10 +4,11 @@ import Chat from './Chat';
 import Dashboard from './Dashboard';
 import NewsTicker from './NewsTicker';
 
-// Placeholder for logo, can be replaced with an actual SVG or image
+// 로고 컴포넌트 (실제 SVG나 이미지로 교체 가능)
 const Logo = () => <h1 className="logo">SAMPLE ENERGY</h1>;
 
 function App() {
+  // 뉴스 티커에 표시될 더미 데이터
   const newsItems = [
     { id: 1, text: "오늘의 에너지 절약 팁: 사용하지 않는 플러그는 뽑아두세요!" },
     { id: 2, text: "Ecoo 챗봇과 함께 탄소 발자국을 줄여보세요." },
@@ -17,6 +18,7 @@ function App() {
 
   return (
     <div className="App">
+      {/* 메인 헤더 */}
       <header className="main-header">
         <div className="container">
           <Logo />
@@ -33,9 +35,9 @@ function App() {
       </header>
 
       <main>
+        {/* 메인 히어로 섹션 */}
         <section id="hero" className="hero-section">
           <div className="hero-content">
-            #메인 세션
             <NewsTicker news={newsItems} />
           </div>
           <div className="hero-bg"></div>

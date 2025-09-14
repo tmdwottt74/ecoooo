@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-// This should match the Pydantic model in the backend
+// 이 구조는 백엔드의 Pydantic 모델과 일치해야 합니다
 interface DashboardData {
   user_id: string;
   co2_saved_today: number;
@@ -13,7 +13,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const userId = 'prototype_user'; // Using a fixed user_id for the prototype
+  const userId = 'prototype_user'; // 프로토타입을 위해 고정된 user_id 사용
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -36,7 +36,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
-  }, []); // The empty dependency array ensures this effect runs only once
+  }, []); // 빈 의존성 배열은 이 effect가 한 번만 실행되도록 보장합니다
 
   const handleLogActivity = async (activityType: 'subway' | 'bike') => {
     try {
@@ -56,10 +56,10 @@ const Dashboard = () => {
       }
 
       const result: DashboardData = await response.json();
-      setData(result); // Update dashboard with the new data from the backend
+      setData(result); // 백엔드로부터 받은 새 데이터로 대시보드를 업데이트합니다
     } catch (error) {
       console.error("Error logging activity:", error);
-      // Optionally, show an error message to the user
+      // 필요한 경우 사용자에게 오류 메시지를 표시합니다
     }
   };
 

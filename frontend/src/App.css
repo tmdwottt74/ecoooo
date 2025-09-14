@@ -1,10 +1,10 @@
-/* Reset and base styles are in index.css */
+/* 리셋 및 기본 스타일은 index.css에 있습니다 */
 
 .App {
   overflow-x: hidden;
 }
 
-/* Header & Navigation */
+/* 헤더 및 네비게이션 */
 .main-header {
   position: fixed;
   top: 0;
@@ -44,9 +44,9 @@
   color: var(--primary-green);
 }
 
-/* Hero Section */
+/* 히어로 섹션 */
 .hero-section {
-  padding-top: 100px; /* Header offset */
+  padding-top: 100px; /* 헤더 높이만큼 오프셋 */
   height: 60vh;
   display: flex;
   align-items: center;
@@ -63,7 +63,7 @@
   width: 100%;
   height: 100%;
   background-color: var(--primary-green);
-  background-image: url('https://www.toptal.com/designers/subtlepatterns/uploads/leaves.png'); /* Placeholder for the tree illustration */
+  background-image: url('https://www.toptal.com/designers/subtlepatterns/uploads/leaves.png'); /* 나무 일러스트를 위한 플레이스홀더 */
   z-index: -1;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
 }
@@ -102,7 +102,7 @@
   color: var(--primary-green);
 }
 
-/* Content Section */
+/* 콘텐츠 섹션 */
 .content-section {
   padding: 100px 0;
 }
@@ -123,7 +123,7 @@
   margin-top: 20px;
 }
 
-/* Cards Section */
+/* 카드 섹션 */
 .cards-section .container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -155,7 +155,7 @@
   margin-bottom: 10px;
 }
 
-/* Footer */
+/* 푸터 */
 .main-footer-section {
   background-color: var(--background-dark);
   color: #bdc3c7;
@@ -179,10 +179,10 @@
   color: #7f8c8d;
 }
 
-/* Responsive Design */
+/* 반응형 디자인 */
 @media (max-width: 768px) {
   .main-nav {
-    /* For simplicity, we'll just hide the nav. A real implementation would use a hamburger menu. */
+    /* 단순화를 위해 네비게이션을 숨깁니다. 실제 구현에서는 햄버거 메뉴를 사용합니다. */
     display: none;
   }
 
@@ -202,7 +202,7 @@
   }
 }
 
-/* Service Experience Section */
+/* 서비스 경험 섹션 */
 .service-experience-section {
     background-color: #f8f9fa;
 }
@@ -218,7 +218,7 @@
     align-items: flex-start;
 }
 
-/* Redesigned Dashboard */
+/* 재디자인된 대시보드 */
 .dashboard-container,
 .chat-container {
     background-color: var(--background-light);
@@ -241,7 +241,7 @@
     gap: 20px;
 }
 
-/* Overriding card styles for dashboard */
+/* 대시보드 카드 스타일 오버라이딩 */
 .dashboard-container .card {
     background-color: #f8f9fa;
     padding: 20px;
@@ -284,10 +284,10 @@
 }
 
 .activity-logger button:hover {
-    background-color: #16a085; /* Darker green */
+    background-color: #16a085; /* 더 어두운 녹색 */
 }
 
-/* Redesigned Chat */
+/* 재디자인된 채팅 */
 .message-window {
     height: 400px;
     overflow-y: auto;
@@ -363,34 +363,34 @@
     background-color: #95a5a6;
 }
 
-/* Responsive adjustments for the service grid */
+/* 서비스 그리드 반응형 조정 */
 @media (max-width: 992px) {
     .service-grid {
         grid-template-columns: 1fr;
     }
 }
 
-/* News Ticker Styles */
+/* 뉴스 티커 스타일 */
 .news-ticker-container {
   position: absolute;
-  bottom: 20px; /* Adjust as needed */
+  bottom: 20px; /* 필요에 따라 조정 */
   left: 50%;
   transform: translateX(-50%);
-  width: 80%; /* Adjust width as needed */
+  width: 80%; /* 필요에 따라 너비 조정 */
   max-width: 600px;
-  background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white */
+  background-color: rgba(255, 255, 255, 0.8); /* 반투명 흰색 */
   padding: 10px 20px;
   border-radius: 25px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  color: var(--primary-green); /* Text color matching theme */
+  color: var(--primary-green); /* 테마와 일치하는 텍스트 색상 */
   font-weight: 600;
   font-size: 1.1rem;
 }
 
 .news-ticker-item {
   white-space: nowrap;
-  animation: slide-in-out 3s infinite; /* Animation duration should match JS interval */
+  animation: slide-in-out 3s infinite; /* 애니메이션 지속 시간은 JS 간격과 일치해야 합니다 */
 }
 
 .news-ticker-item p {

@@ -1,8 +1,8 @@
-/* Import a modern font, Pretendard, which is similar to the design */
+/* 디자인과 유사한 최신 글꼴, Pretendard를 가져옵니다 */
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
 
 :root {
-  --primary-green: #1abc9c; /* A vibrant green similar to the PDF */
+  --primary-green: #1abc9c; /* PDF와 유사한 선명한 녹색 */
   --dark-text: #34495e;
   --light-text: #ffffff;
   --background-light: #ffffff;

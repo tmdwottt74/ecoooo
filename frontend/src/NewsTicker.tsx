@@ -15,7 +15,7 @@ const NewsTicker: React.FC<NewsTickerProps> = ({ news }) => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => (prevIndex + 1) % news.length);
-    }, 3000); // Change news item every 3 seconds
+    }, 3000); // 3초마다 뉴스 아이템 변경
     return () => clearInterval(interval);
   }, [news.length]);
 
