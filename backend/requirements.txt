@@ -1,0 +1,12 @@
+fastapi
+PyMySQL
+SQLAlchemy<2.0
+uvicorn
+python-dotenv
+passlib[bcrypt]
+python-jose[cryptography]
+boto3
+httpx
+pandas
+scikit-learn
+Faker
