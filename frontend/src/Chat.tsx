@@ -7,13 +7,6 @@ interface Message {
   text: string;
 }
 
-const recommendedQuestions = [
-  "내가 절약한 탄소량은?",
-  "오늘의 탄소 절감 실천활동 기록하기",
-  "내가 모은 포인트는?",
-  "내 정원 레벨은?",
-];
-
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState<string>("");
@@ -22,52 +15,49 @@ const Chat: React.FC = () => {
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
   const userId = 1; // 예시 사용자 ID
 
-// ✅ 대시보드 & 챌린지 응답 핸들러
-const handleDashboardReply = async (
-  intent: "절약량" | "포인트" | "정원" | "챌린지"
-) => {
-  try {
-    if (intent === "챌린지") {
-      const res = await fetch(`${API_URL}/challenge/${userId}`);
-      const data = await res.json();
-      const botMessage: Message = {
-        sender: "bot",
-        text: `🔥 현재 챌린지 진행 상황: 목표 ${(
-          data.target / 1000
-        ).toFixed(0)} kg 중 ${(
-          data.current / 1000
-        ).toFixed(1)} kg 달성 (${data.percent}%)`,
-      };
+  // ✅ 대시보드 & 챌린지 응답 핸들러
+  const handleDashboardReply = async (
+    intent: "절약량" | "포인트" | "정원" | "챌린지"
+  ) => {
+    try {
+      if (intent === "챌린지") {
+        const res = await fetch(`${API_URL}/challenge/${userId}`);
+        const data = await res.json();
+        const botMessage: Message = {
+          sender: "bot",
+          text: `🔥 현재 챌린지 진행 상황: 목표 ${(data.target / 1000).toFixed(
+            0
+          )} kg 중 ${(data.current / 1000).toFixed(1)} kg 달성 (${data.percent}%)`,
+        };
+        setMessages((prev) => [...prev, botMessage]);
+        return;
+      }
+
+      // 기존 대시보드 처리
+      const response = await fetch(`${API_URL}/dashboard/${userId}`);
+      const data = await response.json();
+      let botText = "";
+
+      if (intent === "절약량") {
+        botText = `오늘은 ${data.today_saved.toFixed(
+          1
+        )} g CO₂ 절약했고, 누적 절약량은 ${data.total_saved ?? "-"} kg이에요 🌱`;
+      } else if (intent === "포인트") {
+        botText = `지금까지 총 ${data.total_points} 포인트를 모았어요 💰`;
+      } else if (intent === "정원") {
+        botText = `현재 정원 레벨은 Lv.${data.garden_level} 입니다 🌳`;
+      }
+
+      const botMessage: Message = { sender: "bot", text: botText };
       setMessages((prev) => [...prev, botMessage]);
-      return;
+    } catch (error) {
+      const errorMessage: Message = {
+        sender: "bot",
+        text: "데이터를 불러오지 못했어요 😢",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
     }
-
-    // 기존 대시보드 처리
-    const response = await fetch(`${API_URL}/dashboard/${userId}`);
-    const data = await response.json();
-    let botText = "";
-
-    if (intent === "절약량") {
-      botText = `오늘은 ${data.today_saved.toFixed(
-        1
-      )} g CO₂ 절약했고, 누적 절약량은 ${data.total_saved ?? "-"} kg이에요 🌱`;
-    } else if (intent === "포인트") {
-      botText = `지금까지 총 ${data.total_points} 포인트를 모았어요 💰`;
-    } else if (intent === "정원") {
-      botText = `현재 정원 레벨은 Lv.${data.garden_level} 입니다 🌳`;
-    }
-
-    const botMessage: Message = { sender: "bot", text: botText };
-    setMessages((prev) => [...prev, botMessage]);
-  } catch (error) {
-    const errorMessage: Message = {
-      sender: "bot",
-      text: "데이터를 불러오지 못했어요 😢",
-    };
-    setMessages((prev) => [...prev, errorMessage]);
-  }
-};
-
+  };
 
   // ✅ 추천 질문 버튼 클릭
   const handleQuickSend = (text: string) => {
@@ -75,15 +65,14 @@ const handleDashboardReply = async (
     setMessages((prev) => [...prev, userMessage]);
 
     if (text.includes("챌린지")) {
-  handleDashboardReply("챌린지");
-} else if (text.includes("탄소") || text.includes("절약")) {
-  handleDashboardReply("절약량");
-} else if (text.includes("포인트")) {
-  handleDashboardReply("포인트");
-} else if (text.includes("정원")) {
-  handleDashboardReply("정원");
-}
-else {
+      handleDashboardReply("챌린지");
+    } else if (text.includes("탄소") || text.includes("절약")) {
+      handleDashboardReply("절약량");
+    } else if (text.includes("포인트")) {
+      handleDashboardReply("포인트");
+    } else if (text.includes("정원")) {
+      handleDashboardReply("정원");
+    } else {
       const botMessage: Message = {
         sender: "bot",
         text: "챗봇이 아직 학습 중이에요 🤖",
@@ -92,13 +81,14 @@ else {
     }
   };
 
+  // ✅ 실제로 사용되는 추천 질문
   const recommendedQuestions = [
-  "내가 절약한 탄소량은?",
-  "오늘의 탄소 절감 실천활동 기록하기",
-  "내가 모은 포인트는?",
-  "내 정원 레벨은?",
-  "챌린지 진행 상황 알려줘",
-];
+    "내가 절약한 탄소량은?",
+    "오늘의 탄소 절감 실천활동 기록하기",
+    "내가 모은 포인트는?",
+    "내 정원 레벨은?",
+    "챌린지 진행 상황 알려줘",
+  ];
 
   // ✅ 일반 입력 전송
   const handleSendMessage = async () => {

@@ -4,6 +4,16 @@ from datetime import datetime
 from decimal import Decimal
 import enum
 
+# ✅ 최근 7일 절감량 응답 모델
+class DailySavingResponse(BaseModel):
+    date: str      # 날짜 (YYYY-MM-DD)
+    saved_g: float # 절감량(g)
+
+# 📌 교통수단별 절감량 응답 모델
+class ModeStatResponse(BaseModel):
+    mode: str      # 이동수단 이름 (subway, bus, bike, walk 등)
+    saved_g: float # 절감량(g)
+    
 # =========================
 # ENUM 정의
 # =========================

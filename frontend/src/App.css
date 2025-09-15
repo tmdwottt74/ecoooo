@@ -62,7 +62,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--primary-green);
+  background-color: #FFFFF0;
   background-image: url('https://www.toptal.com/designers/subtlepatterns/uploads/leaves.png'); /* Placeholder for the tree illustration */
   z-index: -1;
   border-radius: 0 0 var(--border-radius) var(--border-radius);
@@ -539,4 +539,9 @@
   10% { transform: translateX(0%); opacity: 1; }
   90% { transform: translateX(0%); opacity: 1; }
   100% { transform: translateX(-100%); opacity: 0; }
+}
+
+/* ✅ 헤더 아이보리색 복원 */
+header {
+  background-color: #FFFFF0;  /* 아이보리색 */
 }

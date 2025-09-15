@@ -32,11 +32,11 @@ const Logo: React.FC = () => (
   </h1>
 );
 
-// 메시지 타입 정의
-interface Message {
-  sender: 'user' | 'bot';
-  text: string;
-}
+// 메시지 타입 정의 (❌ 사용 안 하므로 이 부분도 삭제 가능)
+// interface Message {
+//   sender: 'user' | 'bot';
+//   text: string;
+// }
 
 function App() {
   const [serviceOpen, setServiceOpen] = useState<boolean>(false);
@@ -65,11 +65,6 @@ function App() {
     { id: 3, text: "새로운 친환경 캠페인에 참여하고 에코 크레딧을 받으세요!" },
     { id: 4, text: "미래를 위한 지속 가능한 에너지, Ecoo와 함께 만들어가요." },
   ];
-
-  const [messages, setMessages] = useState<Message[]>([
-    { sender: 'bot', text: '안녕하세요 👋 Eco Life 챗봇입니다!' },
-    { sender: 'bot', text: '오늘 대중교통을 이용하셨나요?' },
-  ]);
 
   return (
     <div className="App">

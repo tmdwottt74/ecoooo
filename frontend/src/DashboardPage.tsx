@@ -15,18 +15,30 @@ import {
 import "./App.css";
 import "./DashboardPage.css";
 
-interface DashboardData {
-  co2_saved_today: number;
-  eco_credits_earned: number;
-  garden_level: number;
-  total_saved: number; // 누적 절약량
-  total_points: number; // 누적 포인트
-  last7days: { date: string; saved_g: number }[];
+interface DailySaving {
+  date: string;
+  saved_g: number;
 }
 
-interface DailySaving {
-  ymd: string;
-  saved_g: number;
+interface ModeStat {
+  name: string;
+  value: number;
+}
+
+interface Challenge {
+  goal: number;
+  progress: number;
+}
+
+interface DashboardData {
+  co2_saved_today: number; // 오늘 절약량 (g)
+  eco_credits_earned: number; // 오늘 획득 포인트
+  garden_level: number; // 정원 레벨
+  total_saved: number; // 누적 절약량 (kg)
+  total_points: number; // 누적 포인트
+  last7days: DailySaving[];
+  modeStats: { mode: string; saved_g: number }[];
+  challenge: Challenge;
 }
 
 const COLORS = ["#1abc9c", "#16a085", "#f39c12", "#e74c3c"];
@@ -34,53 +46,43 @@ const COLORS = ["#1abc9c", "#16a085", "#f39c12", "#e74c3c"];
 const DashboardPage: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [dailySaving, setDailySaving] = useState<DailySaving[]>([]);
-  const [modeStats, setModeStats] = useState<{ name: string; value: number }[]>(
-    []
-  );
+  const [modeStats, setModeStats] = useState<ModeStat[]>([]);
   const [loading, setLoading] = useState(true);
 
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
-  const userId = 1; // 예시 user_id
+  const userId = 1;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // 📌 요약 데이터
         const response = await fetch(`${API_URL}/dashboard/${userId}`);
         if (response.ok) {
           const result = await response.json();
-          setData({
-            ...result,
-            total_saved: result.total_saved || 123.4, // 누적 절약량 (임시 기본값)
-          });
-        }
+          setData(result);
 
-        // 📌 일별 절감량 (추가 API가 있다면 호출)
-        const dailyRes = await fetch(
-          `${API_URL}/mobility/stats/daily/${userId}`
-        );
-        if (dailyRes.ok) {
-          const rows: DailySaving[] = await dailyRes.json();
-          setDailySaving(
-            rows.map((r) => ({
-              ...r,
-              ymd: new Date(r.ymd).toLocaleDateString("ko-KR", {
-                month: "2-digit",
-                day: "2-digit",
-              }),
-            }))
-          );
-        }
+          if (result.last7days) {
+            setDailySaving(
+              result.last7days.map((item: any) => ({
+                date: new Date(item.date).toLocaleDateString("ko-KR", {
+                  month: "2-digit",
+                  day: "2-digit",
+                }),
+                saved_g: Number(item.saved_g) || 0,
+              }))
+            );
+          }
 
-        // 📌 교통수단별 절감 비율 (현재는 더미 데이터)
-        setModeStats([
-          { name: "지하철", value: 60 },
-          { name: "버스", value: 25 },
-          { name: "자전거", value: 10 },
-          { name: "도보", value: 5 },
-        ]);
+          if (result.modeStats) {
+            setModeStats(
+              result.modeStats.map((item: any) => ({
+                name: item.mode,
+                value: Number(item.saved_g) || 0,
+              }))
+            );
+          }
+        }
       } catch (e) {
-        console.error("Failed to fetch dashboard data:", e);
+        console.error("Dashboard API fetch error:", e);
       } finally {
         setLoading(false);
       }
@@ -98,50 +100,19 @@ const DashboardPage: React.FC = () => {
         🌍 나의 에코 대시보드
       </h2>
 
-      {/* 🌱 나만의 정원 카드 */}
-      <div className="card garden-preview-card">
-        <h4>🌱 나만의 정원</h4>
-        <div className="garden-preview">
-          <div className="garden-circle">
-            <div className="garden-plant"></div>
-          </div>
-          <div className="garden-stats">
-            <p>총 절감량: {data.total_saved} kg</p>
-            <p>정원 레벨: Lv.{data.garden_level}</p>
-          </div>
-        </div>
-        <p style={{ textAlign: "center", marginTop: "0.5rem" }}>
-          <a
-            href="/mygarden"
-            style={{ color: "var(--primary-green)", fontWeight: 600 }}
-          >
-            👉 정원 보러가기
-          </a>
-        </p>
-      </div>
-
       {/* 요약 카드 */}
-      <div
-        className="dashboard-grid"
-        style={{ gridTemplateColumns: "repeat(4, 1fr)" }}
-      >
+      <div className="dashboard-grid" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
         <div className="card">
           <h4>오늘 절약한 탄소</h4>
-          <p className="metric">
-            {data.co2_saved_today.toFixed(2)} <span>g</span>
-          </p>
+          <p className="metric">{data.co2_saved_today?.toFixed(2)} <span>g</span></p>
         </div>
         <div className="card">
           <h4>누적 절약량</h4>
-          <p className="metric">
-            {data.total_saved} <span>kg</span>
-          </p>
+          <p className="metric">{data.total_saved} <span>kg</span></p>
         </div>
         <div className="card">
           <h4>에코 크레딧</h4>
-          <p className="metric">
-            {data.eco_credits_earned} <span>P</span>
-          </p>
+          <p className="metric">{data.eco_credits_earned} <span>P</span></p>
         </div>
         <div className="card">
           <h4>정원 레벨</h4>
@@ -150,21 +121,18 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* 📈 최근 7일 절감량 */}
-      <h3 style={{ marginTop: "2rem" }}>📈 최근 7일 절감량 추이</h3>
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data.last7days}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
-          <YAxis />
-          <Tooltip />
-          <Line
-            type="monotone"
-            dataKey="saved_g"
-            stroke="#1abc9c"
-            strokeWidth={2}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <div style={{ marginTop: "2rem" }}>
+        <h4>최근 7일 절감량</h4>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={dailySaving}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip />
+            <Line type="monotone" dataKey="saved_g" stroke="#82ca9d" strokeWidth={2} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
 
       {/* 🚋 교통수단 비율 */}
       <h3 style={{ marginTop: "2rem" }}>🚋 교통수단별 절감 비율</h3>
@@ -187,7 +155,7 @@ const DashboardPage: React.FC = () => {
         </PieChart>
       </ResponsiveContainer>
 
-      {/* AI 피드백 */}
+      {/* 🌱 AI 피드백 */}
       <div
         className="ai-feedback"
         style={{
@@ -219,7 +187,7 @@ const DashboardPage: React.FC = () => {
         >
           <div
             style={{
-              width: "65%",
+              width: `${(data.challenge.progress / data.challenge.goal) * 100}%`,
               background: "#1abc9c",
               height: "100%",
               textAlign: "center",
@@ -227,7 +195,7 @@ const DashboardPage: React.FC = () => {
               fontSize: "0.8rem",
             }}
           >
-            65%
+            {Math.round((data.challenge.progress / data.challenge.goal) * 100)}%
           </div>
         </div>
         <p
@@ -237,7 +205,7 @@ const DashboardPage: React.FC = () => {
             color: "#7f8c8d",
           }}
         >
-          그룹 챌린지: 100kg 절감 목표 중 65kg 달성!
+          그룹 챌린지: {data.challenge.goal}kg 절감 목표 중 {data.challenge.progress}kg 달성!
         </p>
       </div>
     </div>

@@ -3,9 +3,9 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer
 } from "recharts";
 
-// 백엔드 Pydantic 모델과 일치하도록 user_id 타입을 number로 수정
+// 📌 백엔드 응답 타입 정의
 interface DashboardData {
-  user_id: number; // string -> number
+  user_id: number;
   co2_saved_today: number;
   eco_credits_earned: number;
   garden_level: number;
@@ -22,34 +22,42 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 백엔드 user_id 타입에 맞춰 number로 변경. 실제로는 로그인 상태를 관리하는 로직 필요
-  const userId = 1; // Number로 변경
+  // 실제 로그인된 user_id를 받아야 하지만, 지금은 하드코딩
+  const userId = 1;
 
-  const BACKEND_URL = 'http://127.0.0.1:8001'; // 백엔드 포트 8001로 수정
+  // ✅ uvicorn 실행 포트 및 URL 통일
+  const BACKEND_URL = 'http://127.0.0.1:8000';
 
+  // 데이터 불러오기
   const fetchData = async () => {
     setIsLoading(true);
     try {
       // 📌 대시보드 데이터
       const response = await fetch(`${BACKEND_URL}/dashboard/${userId}`);
-      if (!response.ok) throw new Error('Network response was not ok');
+      if (!response.ok) throw new Error('대시보드 데이터 불러오기 실패');
       const result: DashboardData = await response.json();
       setData(result);
 
-      // 📌 일별 절감량 데이터 (백엔드 API 엔드포인트 확인 후 수정)
-      const dailyRes = await fetch(`${BACKEND_URL}/mobility_logs/stats/daily/${userId}`);
+      // 📌 일별 절감량 데이터 (API_URL 대신 BACKEND_URL 사용)
+      // 백엔드 엔드포인트는 /v_daily_saving을 가정
+      const dailyRes = await fetch(`${BACKEND_URL}/mobility/stats/daily/${userId}`);
       if (dailyRes.ok) {
         const rows = await dailyRes.json();
-        // 날짜 형식 변환 (예: 2025-09-15T00:00:00 -> 2025-09-15)
-        const formattedData = rows.map((item: any) => ({
-          date: new Date(item.ymd).toLocaleDateString(),
-          saved_g: item.saved_g
+
+        // rows: [{ ymd: "2025-09-10", saved_g: 120 }, ...]
+        const formattedData: DailySaving[] = rows.map((item: any) => ({
+          date: new Date(item.ymd).toLocaleDateString("ko-KR", {
+            month: "2-digit",
+            day: "2-digit",
+          }),
+          saved_g: Number(item.saved_g) || 0,
         }));
+
         setDailySaving(formattedData);
       }
     } catch (e) {
       if (e instanceof Error) {
-        setError('데이터를 불러오는 데 실패했습니다. 백엔드 서버 및 DB가 실행 중인지 확인해주세요.');
+        setError('데이터를 불러오는 데 실패했습니다. 백엔드 서버 및 DB 연결을 확인하세요.');
       }
       console.error("Failed to fetch dashboard data:", e);
     } finally {
@@ -57,10 +65,7 @@ const Dashboard = () => {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
+  // 활동 기록 (버튼 클릭 시)
   const handleLogActivity = async (activityType: 'subway' | 'bike') => {
     try {
       const response = await fetch(`${BACKEND_URL}/activity`, {
@@ -72,7 +77,7 @@ const Dashboard = () => {
         }),
       });
 
-      if (!response.ok) throw new Error('Failed to log activity');
+      if (!response.ok) throw new Error('활동 기록 실패');
       const result: DashboardData = await response.json();
       setData(result);
     } catch (error) {
@@ -80,6 +85,11 @@ const Dashboard = () => {
     }
   };
 
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // 화면 렌더링
   const renderContent = () => {
     if (isLoading) return <p>데이터를 불러오는 중...</p>;
     if (error) return <p>{error}</p>;
@@ -91,7 +101,7 @@ const Dashboard = () => {
         <div className="dashboard-grid">
           <div className="card">
             <h4>오늘 절약한 탄소</h4>
-            <p className="metric">{data.co2_saved_today.toFixed(2)} <span>kg</span></p>
+            <p className="metric">{data.co2_saved_today.toFixed(2)} <span>g</span></p>
           </div>
           <div className="card">
             <h4>획득한 에코 크레딧</h4>
@@ -104,18 +114,24 @@ const Dashboard = () => {
         </div>
 
         {/* 일별 절감량 차트 */}
-        <div style={{ marginTop: "2rem" }}>
-          <h4>최근 7일 절감량</h4>
+            <div style={{ marginTop: "2rem" }}>
+        <h3 style={{ marginTop: "2rem" }}>📈 최근 7일 절감량 추이</h3>
+        {dailySaving && dailySaving.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={dailySaving}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
-              <YAxis />
+              <YAxis dataKey="saved_g" />
               <Tooltip />
-              <Line type="monotone" dataKey="saved_g" stroke="#82ca9d" />
+              <Line type="monotone" dataKey="saved_g" stroke="#82ca9d" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        ) : (
+          // Display a message or a placeholder if no data is available
+          <p>데이터가 없습니다.</p>
+        )}
+      </div>
+
 
         {/* AI 피드백 */}
         <div className="ai-feedback" style={{ marginTop: "2rem", fontSize: "1.2rem" }}>

@@ -59,3 +59,34 @@ push하기전 pull 먼저 하는거 ㄹㅇ 필수임 진짜 이거 안하면 병
 
 
 이제 웹 브라우저에서 프론트엔드 애플리케이션에 접속하여 백엔드와 통신하는 것을 확인할 수 있습니다.
+
+
+
+##백엔드 응답 예시 (Fast API)
+{
+  "user_id": 1,
+  "co2_saved_today": 3.2,
+  "eco_credits_earned": 120,
+  "garden_level": 2,
+  "total_saved": 65.0,          // 누적 절약량 (kg)
+  "total_points": 450,
+  "last7days": [
+    { "date": "2025-09-10", "saved_g": 120 },
+    { "date": "2025-09-11", "saved_g": 80 },
+    { "date": "2025-09-12", "saved_g": 150 },
+    { "date": "2025-09-13", "saved_g": 200 },
+    { "date": "2025-09-14", "saved_g": 90 },
+    { "date": "2025-09-15", "saved_g": 50 },
+    { "date": "2025-09-16", "saved_g": 170 }
+  ],
+  "modeStats": [
+    { "mode": "지하철", "saved_g": 600 },
+    { "mode": "버스", "saved_g": 250 },
+    { "mode": "자전거", "saved_g": 100 },
+    { "mode": "도보", "saved_g": 50 }
+  ],
+  "challenge": {
+    "goal": 100,      // 목표 (kg)
+    "progress": 65    // 현재 절감 (kg)
+  }
+}
