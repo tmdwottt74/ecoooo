@@ -1,11 +1,18 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from . import crud, schemas
-from .database import get_db
+from sqlalchemy import func
+# 수정
+from backend import crud, schemas, models
+from backend.database import get_db
+from backend.routes import users, chat, garden
+
 
 # --- FastAPI App Initialization ---
 app = FastAPI(title="Eco AI Backend", version="1.0.0")
 
+app.include_router(users.router)
+app.include_router(chat.router)
+app.include_router(garden.router)
 
 # =========================
 # Health Check
@@ -33,6 +40,33 @@ def get_user_context(user_id: int, db: Session = Depends(get_db)):
     if not user_context:
         raise HTTPException(status_code=404, detail="User not found")
     return user_context
+
+
+# =========================
+# MyGarden API (탄소 절감량 + 에코포인트 조회)
+# =========================
+from sqlalchemy import func
+
+@app.get("/garden/{user_id}")
+def get_garden_data(user_id: str, db: Session = Depends(get_db)):
+    """
+    특정 사용자의 총 탄소 절감량과 에코 포인트를 반환하는 API
+    """
+    # 총 탄소 절감량 (mobility_logs.co2_saved_g 합계)
+    total_carbon = db.query(
+        func.coalesce(func.sum(models.MobilityLog.co2_saved_g), 0)
+    ).filter(models.MobilityLog.user_id == user_id).scalar()
+
+    # 총 포인트 (credits_ledger.points 합계)
+    total_points = db.query(
+        func.coalesce(func.sum(models.CreditLedger.points), 0)
+    ).filter(models.CreditLedger.user_id == user_id).scalar()
+
+    return {
+        "total_carbon_reduced": float(total_carbon),
+        "total_points": int(total_points)
+    }
+
 
 # =========================
 # Mock API (DB-Free Mode, 테스트용)
@@ -64,17 +98,69 @@ async def handle_chat(message: ChatMessage):
     return ChatResponse(response_message=response_text)
 
 
-@app.get("/dashboard/{user_id}", response_model=DashboardData)
-async def get_dashboard_data(user_id: str):
-    """Returns mock dashboard data as DB is not connected."""
-    print(f"Fetching mock data for user: {user_id}")
-    mock_data = DashboardData(
-        user_id=user_id,
-        co2_saved_today=5.8,
-        eco_credits_earned=450,
-        garden_level=2
+# main.py (추가)
+
+from sqlalchemy import func
+from fastapi import Depends
+
+@app.get("/dashboard/{user_id}")
+def get_dashboard_data(user_id: int, db: Session = Depends(get_db)):
+    
+    # 오늘 절감량
+    today_saved = db.query(
+        func.coalesce(func.sum(models.MobilityLog.co2_saved_g), 0)
+    ).filter(
+        models.MobilityLog.user_id == user_id,
+        func.date(models.MobilityLog.started_at) == func.curdate()
+    ).scalar()
+
+    # 누적 포인트
+    total_points = db.query(
+        func.coalesce(func.sum(models.CreditsLedger.points), 0)
+    ).filter(models.CreditsLedger.user_id == user_id).scalar()
+
+    # 최근 7일 절감량 추이
+    last7days = (
+        db.query(
+            func.date(models.MobilityLog.started_at).label("ymd"),
+            func.coalesce(func.sum(models.MobilityLog.co2_saved_g), 0).label("saved_g")
+        )
+        .filter(
+            models.MobilityLog.user_id == user_id,
+            models.MobilityLog.started_at >= func.date_sub(func.curdate(), 7)
+        )
+        .group_by(func.date(models.MobilityLog.started_at))
+        .all()
     )
-    return mock_data
+
+    return {
+        "today_saved": float(today_saved),
+        "total_points": int(total_points),
+        "last7days": [{"date": str(row.ymd), "saved_g": float(row.saved_g)} for row in last7days]
+    }
+
+# =========================
+# Challenge 진행 상황 API
+# =========================
+@app.get("/challenge/{user_id}")
+def get_challenge_progress(user_id: int, db: Session = Depends(get_db)):
+    """
+    특정 사용자의 그룹 챌린지 진행 상황 반환 (임시: 누적 절약량 기준)
+    """
+    # 현재까지 절감량
+    total_saved = db.query(
+        func.coalesce(func.sum(models.MobilityLog.co2_saved_g), 0)
+    ).filter(models.MobilityLog.user_id == user_id).scalar()
+
+    # 예시: 100kg(=100000g) 절약 목표
+    target = 100000
+    percent = min(100, (total_saved / target) * 100)
+
+    return {
+        "target": target,
+        "current": float(total_saved),
+        "percent": round(percent, 1),
+    }
 
 
 @app.post("/activity", response_model=DashboardData)

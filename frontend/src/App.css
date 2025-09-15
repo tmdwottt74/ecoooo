@@ -123,11 +123,17 @@
   margin-top: 20px;
 }
 
-/* Cards Section */
 .cards-section .container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 30px;
+}
+
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
 }
 
 .card {
@@ -153,6 +159,59 @@
   font-size: 1.2rem;
   font-weight: 600;
   margin-bottom: 10px;
+}
+
+.summary-card {
+  text-align: center;
+}
+
+.metric {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-green);
+}
+
+.metric span {
+  font-size: 1rem;
+  color: #7f8c8d;
+}
+
+.chart-card h4,
+.feedback-card h4,
+.challenge-card h4 {
+  margin-bottom: 1rem;
+}
+
+.feedback-card {
+  margin-top: 2rem;
+  text-align: center;
+  background: #f8f9fa;
+}
+
+.challenge-card {
+  margin-top: 2rem;
+}
+
+.progress-bar {
+  width: 100%;
+  background: #ecf0f1;
+  border-radius: 10px;
+  overflow: hidden;
+  height: 20px;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  background: var(--primary-green);
+  height: 100%;
+  text-align: center;
+  color: white;
+  font-size: 0.8rem;
+}
+
+.progress-text {
+  font-size: 0.9rem;
+  color: #7f8c8d;
 }
 
 /* Footer */
@@ -202,36 +261,59 @@
   justify-content: center;
 }
 
-/* Dropdown 메뉴 스타일 */
 .dropdown {
   position: relative;
 }
 
-.dropdown span {
+.dropdown-toggle {
+  background: none;
+  border: none;
   cursor: pointer;
+  font: inherit;
   font-weight: 500;
+  font-size: 1rem;
+  color: inherit;
 }
 
-.dropdown_menu{
-  display : none;
-  position : absolute;
-  background : #fff;
-  border : 1px solid #eee;
-  border-radius : 8px;
-  padding : 10px 0;
-  list-style : none;
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 0;
+  list-style: none;
+  min-width: 180px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column; /* ✅ 세로 나열 */
 }
 
-.dropdown:hover .dropdown menu{
-  display: block;
+.dropdown-menu li {
+  padding: 12px 20px;
+  transition: background 0.2s ease;
 }
 
-.dropdown-menu li{
-  padding : 8px 20px;
-}
-
-.dropdown-menu li:hover{
+.dropdown-menu li:hover {
   background: var(--grey-accent);
+}
+
+/* App.css */
+.quick-questions {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.quick-questions button {
+  background: #f0f8f5;
+  border: 1px solid #1abc9c;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
 }
 
 /* Responsive Design */

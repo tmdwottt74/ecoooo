@@ -61,7 +61,7 @@ class UserGroupRead(UserGroupBase):
     group_id: int
     created_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
@@ -81,7 +81,7 @@ class UserRead(UserBase):
     created_at: datetime
     user_group_id: Optional[int] = None
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # ✅ 추가: AI 맥락 조회용 스키마
 class UserContext(BaseModel):
@@ -105,7 +105,7 @@ class CarbonFactorCreate(CarbonFactorBase):
 class CarbonFactorRead(CarbonFactorBase):
     factor_id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
@@ -121,7 +121,7 @@ class IngestSourceCreate(IngestSourceBase):
 class IngestSourceRead(IngestSourceBase):
     source_id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
@@ -147,7 +147,7 @@ class MobilityLogRead(MobilityLogBase):
     source_id: Optional[int] = None
     created_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
@@ -169,7 +169,7 @@ class CreditsLedgerRead(CreditsLedgerBase):
     ref_log_id: Optional[int] = None
     created_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
@@ -191,7 +191,7 @@ class ChallengeRead(ChallengeBase):
     challenge_id: int
     created_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class ChallengeMemberBase(BaseModel):
     challenge_id: int
@@ -200,7 +200,7 @@ class ChallengeMemberBase(BaseModel):
 class ChallengeMemberRead(ChallengeMemberBase):
     joined_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
@@ -217,7 +217,7 @@ class AchievementCreate(AchievementBase):
 class AchievementRead(AchievementBase):
     achievement_id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserAchievementBase(BaseModel):
     user_id: int
@@ -226,7 +226,7 @@ class UserAchievementBase(BaseModel):
 class UserAchievementRead(UserAchievementBase):
     granted_at: datetime
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
@@ -246,7 +246,7 @@ class NotificationRead(NotificationBase):
     created_at: datetime
     read_at: Optional[datetime]
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
@@ -264,7 +264,7 @@ class IngestRawCreate(IngestRawBase):
 class IngestRawRead(IngestRawBase):
     raw_id: int
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # =========================
