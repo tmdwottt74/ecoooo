@@ -178,6 +178,29 @@
   font-size: 0.8rem;
   color: #7f8c8d;
 }
+/* DashboardPage 레이아웃 */
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* 챗봇 영역 */
+.chat-section {
+  flex: 1;
+}
+
+/* 대시보드 영역 */
+.dashboard-summary {
+  flex: 2;
+}
+
+/* 정원 영역 */
+.garden-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
 
 /* Responsive Design */
 @media (max-width: 768px) {

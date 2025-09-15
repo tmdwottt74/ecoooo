@@ -1,11 +1,16 @@
 import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
-import Chat from './Chat';
-import Dashboard from './Dashboard';
+import DashboardPage from './DashboardPage';
 import NewsTicker from './NewsTicker';
 
-// Placeholder for logo, can be replaced with an actual SVG or image
-const Logo = () => <h1 className="logo">SAMPLE ENERGY</h1>;
+// 새 페이지 컴포넌트 (임시)
+const About = () => <div style={{ padding: "2rem" }}><h2>About Us Page</h2></div>;
+const Notice = () => <div style={{ padding: "2rem" }}><h2>Notice Page</h2></div>;
+const Contact = () => <div style={{ padding: "2rem" }}><h2>Contact Page</h2></div>;
+
+// 로고 텍스트 수정
+const Logo = () => <h1 className="logo">SAVE ENERGY</h1>;
 
 function App() {
   const newsItems = [
@@ -16,84 +21,65 @@ function App() {
   ];
 
   return (
-    <div className="App">
-      <header className="main-header">
-        <div className="container">
-          <Logo />
-          <nav className="main-nav">
-            <ul>
-              <li><a href="#about">About Us</a></li>
-              <li><a href="#business">Business</a></li>
-              <li><a href="#service">Service</a></li>
-              <li><a href="#notice">Notice</a></li>
-              <li><a href="#contact">Contact</a></li>
-            </ul>
-          </nav>
-        </div>
-      </header>
-
-      <main>
-        <section id="hero" className="hero-section">
-          <div className="hero-content">
-            #메인 세션
-            <NewsTicker news={newsItems} />
-          </div>
-          <div className="hero-bg"></div>
-        </section>
-
-        <section id="about" className="content-section text-center">
+    <Router>
+      <div className="App">
+        <header className="main-header">
           <div className="container">
-            <h2>아름다운 자연을 보존하고<br />미래로 이끄는 변화는<br />신재생에너지로부터 시작합니다.</h2>
-            <p className="subtitle">자연을 보존하며 신재생에너지를 보급할 수 있도록 혁신기술을 개발합니다.</p>
+            <Logo />
+            <nav className="main-nav">
+              <ul>
+                <li><Link to="/about">About Us</Link></li>
+                <li><Link to="/service">Service</Link></li>
+                <li><Link to="/notice">Notice</Link></li>
+                <li><Link to="/contact">Contact</Link></li>
+              </ul>
+            </nav>
           </div>
-        </section>
+        </header>
 
-        <section id="business" className="cards-section">
+        <main>
+          <Routes>
+            {/* 홈 (기존 Hero + 서비스 체험 포함) */}
+            <Route path="/" element={
+              <>
+                <section id="hero" className="hero-section">
+                  <div className="hero-content">
+                    #메인 세션
+                    <NewsTicker news={newsItems} />
+                  </div>
+                  <div className="hero-bg"></div>
+                </section>
+
+                <section id="service" className="content-section service-experience-section">
+                  <div className="container">
+                    <div className="section-header text-center">
+                      <h2>서비스 체험</h2>
+                      <p className="subtitle">Ecoo 챗봇과 대시보드를 통해 탄소 절감 활동을 직접 경험해보세요.</p>
+                    </div>
+                    <DashboardPage />
+                  </div>
+                </section>
+              </>
+            } />
+
+            {/* 새 페이지들 */}
+            <Route path="/about" element={<About />} />
+            <Route path="/notice" element={<Notice />} />
+            <Route path="/contact" element={<Contact />} />
+          </Routes>
+        </main>
+
+        <footer id="contact" className="main-footer-section">
           <div className="container">
-            <div className="card">
-              <div className="card-icon"><img src="https://placehold.co/80x80/1abc9c/ffffff?text=ESS" alt="ESS Icon" /></div>
-              <h3>ESS AREA</h3>
-              <p>최적화된 고객맞춤형 충전 솔루션</p>
-            </div>
-            <div className="card">
-              <div className="card-icon"><img src="https://placehold.co/80x80/1abc9c/ffffff?text=SOLAR" alt="Solar Icon" /></div>
-              <h3>WATER SOLAR POWER SYSTEM</h3>
-              <p>수상 태양광 발전 시스템</p>
-            </div>
-            <div className="card">
-              <div className="card-icon"><img src="https://placehold.co/80x80/1abc9c/ffffff?text=O%26M" alt="O&M Icon" /></div>
-              <h3>OPERATION & MAINTENANCE</h3>
-              <p>O&M 유지보수 사업</p>
-            </div>
-          </div>
-        </section>
-
-        <section id="service" className="content-section service-experience-section">
-          <div className="container">
-            <div className="section-header text-center">
-                <h2>서비스 체험</h2>
-                <p className="subtitle">Ecoo 챗봇과 대시보드를 통해 탄소 절감 활동을 직접 경험해보세요.</p>
-            </div>
-            <div className="service-grid">
-              <Dashboard />
-              <Chat />
-            </div>
-          </div>
-        </section>
-
-      </main>
-
-      <footer id="contact" className="main-footer-section">
-        <div className="container">
             <Logo />
             <div className="footer-info">
-              
-                <p> 서울시 AI 해커톤 8팀 충무로팀: 송인섭, 김규리, 이승재</p>
+              <p> 서울시 AI 해커톤 8팀 충무로팀: 송인섭, 김규리, 이승재</p>
             </div>
             <p className="copyright">© SHINING All rights reserved.</p>
-        </div>
-      </footer>
-    </div>
+          </div>
+        </footer>
+      </div>
+    </Router>
   );
 }
 
