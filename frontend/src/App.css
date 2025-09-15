@@ -202,6 +202,38 @@
   justify-content: center;
 }
 
+/* Dropdown 메뉴 스타일 */
+.dropdown {
+  position: relative;
+}
+
+.dropdown span {
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.dropdown_menu{
+  display : none;
+  position : absolute;
+  background : #fff;
+  border : 1px solid #eee;
+  border-radius : 8px;
+  padding : 10px 0;
+  list-style : none;
+}
+
+.dropdown:hover .dropdown menu{
+  display: block;
+}
+
+.dropdown-menu li{
+  padding : 8px 20px;
+}
+
+.dropdown-menu li:hover{
+  background: var(--grey-accent);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .main-nav {
