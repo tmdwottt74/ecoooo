@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Chat from './Chat';
-import MyGarden from './MyGarden';
+import Chat from './pages/Chat';
+import MyGarden from './pages/MyGarden';
 import './App.css'; // 스타일 재사용
 
 const ServicePage: React.FC = () => {

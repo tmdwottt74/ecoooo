@@ -29,6 +29,13 @@
   color: var(--primary-green);
 }
 
+.main-quote {
+  font-size: 1.6rem; /* 기존보다 줄임 */
+  font-weight: 700;
+  font-family: "Pretendard", sans-serif; /* 로고와 동일 글꼴 */
+  color: var(--primary-green);
+}
+
 .main-nav ul {
   display: flex;
   gap: 30px;
@@ -46,26 +53,27 @@
 
 /* Hero Section */
 .hero-section {
-  padding-top: 100px; /* Header offset */
+  background: #4db6ac; /* 민트색 계열 */
   height: 60vh;
+    margin-top: 80px; 
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
   position: relative;
   color: var(--light-text);
+    flex-direction: column;
+      min-height: 500px;  /* 원하는 만큼만 높이 */
+  padding: 40px 0;    /* 텍스트/이미지 여백 */
+    padding-top: 100px;  /* 네비게이션 높이만큼 내려줌 */
 }
 
-.hero-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #FFFFF0;
-  background-image: url('https://www.toptal.com/designers/subtlepatterns/uploads/leaves.png'); /* Placeholder for the tree illustration */
-  z-index: -1;
-  border-radius: 0 0 var(--border-radius) var(--border-radius);
+.hero-content {
+  display: flex;
+  flex-direction: column;  /* 세로 정렬 */
+  align-items: center;     /* 가운데 정렬 */
+  text-align: center;      /* 텍스트도 가운데 */
+  color: var(--light-text);
 }
 
 .hero-content h2 {
@@ -84,6 +92,19 @@
   max-width: 500px;
   margin: 0 auto 30px auto;
 }
+
+.hero-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #FFFFF0;
+  background-image: url('https://www.toptal.com/designers/subtlepatterns/uploads/leaves.png'); /* Placeholder for the tree illustration */
+  z-index: -1;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+}
+
 
 .btn {
   padding: 12px 30px;
@@ -254,6 +275,42 @@
   flex: 2;
 }
 
+/* 버튼 오른쪽/아래 정렬 래퍼 */
+.hero-actions {
+    position: absolute;
+  bottom: 20px; /* ✅ 이미지 아래쪽 여백 */
+  right: 20px;  /* ✅ 오른쪽 여백 */
+  display: flex;
+  justify-content: flex-end; /* ✅ 오른쪽 정렬 */
+  margin-top: 16px;
+}
+
+/* 요청하신 흰색 둥근 버튼 */
+.garden-button {
+  display: inline-block;
+  padding: 12px 24px;
+  background: #fff;
+  color: #1ABC9C;
+  border-radius: 25px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: background 0.25s, transform 0.1s;
+}
+
+.garden-button:hover {
+  background: #f1f1f1;
+  transform: translateY(-1px);
+}
+
+/* 반응형: 모바일에선 가운데로 */
+@media (max-width: 640px) {
+  .hero-actions {
+    justify-content: center;
+  }
+}
+
 /* 정원 영역 */
 .garden-section {
   flex: 1;
@@ -300,6 +357,41 @@
   background: var(--grey-accent);
 }
 
+.app-container {
+  background-color: #fdfdf5;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.tab-nav {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 30px;
+}
+
+.tab-nav button {
+  background: #1abc9c;
+  border: none;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.tab-nav button:hover {
+  background: #16a085;
+}
+
+.tab-content {
+  display: flex;
+  justify-content: center;
+}
+
+/* 기존 Home.css 스타일들 그대로 붙여주면 됨 */
+
 /* App.css */
 .quick-questions {
   display: flex;
@@ -308,12 +400,19 @@
 }
 
 .quick-questions button {
-  background: #f0f8f5;
-  border: 1px solid #1abc9c;
+  padding: 12px 16px;
+  border: none;
   border-radius: 20px;
-  padding: 5px 12px;
-  font-size: 0.8rem;
+  font-weight: 600;
+  background: #1abc9c;   /* ✅ 자세히 버튼과 동일 민트색 */
+  color: #fff;
   cursor: pointer;
+  transition: background 0.3s;
+  width: 100%;
+}
+
+.quick-questions button:hover {
+  background: #16a085;   /* hover 시 조금 진한 민트 */
 }
 
 /* Responsive Design */
@@ -321,13 +420,6 @@
   .main-nav {
     /* For simplicity, we'll just hide the nav. A real implementation would use a hamburger menu. */
     display: none;
-  }
-
-  .hero-content h1 {
-    font-size: 2.5rem;
-  }
-  .hero-content h2 {
-    font-size: 1.5rem;
   }
 
   .content-section h2 {
@@ -341,6 +433,7 @@
 
 /* Service Experience Section */
 .service-experience-section {
+    margin-top: 60px;
     background-color: #f8f9fa;
 }
 
@@ -351,9 +444,48 @@
 .service-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 40px;
+    gap: 30px;
+    margin-top: 40px;
     align-items: flex-start;
 }
+
+.service-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+
+.preview-frame {
+  width: 100%;
+  height: 300px;
+  border: none;
+  margin-top: 15px;
+  border-radius: 12px;
+}
+
+.detail-btn {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 16px;
+  background: #1abc9c;
+  color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.hero-title {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;          /* 이미지 위에서도 보이도록 색 지정 */
+  font-size: 2rem;
+  z-index: 2;
+}
+
 
 /* Redesigned Dashboard */
 .dashboard-container,
@@ -362,7 +494,14 @@
     border: 1px solid var(--grey-accent);
     border-radius: var(--border-radius);
     padding: 30px;
-    height: 100%;
+}
+
+/* DashboardPage.css */
+.dashboard-container {
+  background-color: #fdfdf5;
+  min-height: 100vh;
+  padding: 40px 20px;
+  font-family: "Pretendard", sans-serif;
 }
 
 .dashboard-container h3, 
@@ -465,15 +604,17 @@
 
 .input-area {
     display: flex;
+      gap: 10px;
 }
 
 .input-area input {
     flex-grow: 1;
     padding: 12px 20px;
-    border: 1px solid #ccc;
-    border-radius: 25px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
     margin-right: 10px;
     font-size: 1rem;
+      outline: none;
 }
 
 .input-area input:focus {
@@ -484,10 +625,12 @@
 .input-area button {
     padding: 12px 25px;
     border: none;
-    background-color: var(--primary-green);
+  border-radius: 20px;
+  background: #2e7d32;
     color: white;
     border-radius: 25px;
-    cursor: pointer;
+  font-weight: 600;
+  cursor: pointer;
     font-size: 1rem;
     transition: background-color 0.3s ease;
 }
@@ -500,11 +643,54 @@
     background-color: #95a5a6;
 }
 
+.garden-wrapper {
+  display: flex;
+      width: 100%; /* 부모(`garden-wrapper`)의 너비에 꽉 채우도록 설정 */
+    height: auto; /* 비율 유지 */
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.garden-img {
+    max-width: 900px; /* 최대 너비 설정 */
+    width: 100%; /* 부모 요소에 맞춰 늘어나되, max-width를 넘지 않음 */
+  height: auto; /* 비율 유지 */
+   border: none;
+  box-shadow: none;
+  background: trasnparent;
+  transition: transform 0.3s ease;
+      display: block;
+    margin: 0 auto;
+}
+
+.garden-img:hover {
+  transform: scale(1.03); /* 살짝 확대 효과 */
+}
+
+.garden-caption {
+  margin-top: 25px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1ABC9C;
+}
+
 /* Responsive adjustments for the service grid */
-@media (max-width: 992px) {
+@media (max-width: 768px) {
     .service-grid {
         grid-template-columns: 1fr;
     }
+     .chat-container {
+    padding: 0.5rem;
+  }
+
+  .message-window {
+    padding: 0.5rem;
+  }
+
+  .quick-questions {
+    grid-template-columns: 1fr; /* ✅ 모바일에선 세로 배치 */
+  }
 }
 
 /* News Ticker Styles */
@@ -545,3 +731,9 @@
 header {
   background-color: #FFFFF0;  /* 아이보리색 */
 }
+
+/* fixed 헤더 뒤에 본문이 가리는 문제 해결 */
+main {
+  padding-top: 90px; /* 헤더 높이에 맞게 70~100px 사이로 조절 */
+}
+
