@@ -10,8 +10,7 @@ import Chat from "./pages/Chat";
 import Credit from "./pages/Credit";
 import CreditPoints from "./pages/CreditPoints";
 import CreditRecent from "./pages/CreditRecent";
-import Challenge from "./pages/Challenge";
-import Achievements from "./pages/Achievements";
+import ChallengeAchievements from "./pages/ChallengeAchievements";
 import MyGarden from "./pages/MyGarden";
 import { GardenProvider, GardenWithChat } from "./components/GardenChatIntegrations";
 
@@ -26,14 +25,16 @@ const Logo: React.FC = () => (
 );
 
 function AppContent() {
-  const [serviceOpen, setServiceOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const location = useLocation();
   const isPreview = new URLSearchParams(location.search).get("preview") === "1";
 
-  const toggleServiceMenu = () => setServiceOpen((prev) => !prev);
+  // 페이지 이동 시 스크롤을 맨 위로 이동
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
 
   // 서비스 검색 데이터 ✅ (App 함수 안에만 유지)
   const serviceItems = [
@@ -42,8 +43,7 @@ function AppContent() {
     { id: 3, title: "나만의 정원", description: "가상 정원을 꾸며보세요", icon: "🌱", path: "/mygarden" },
     { id: 4, title: "에코 AI 챗봇", description: "환경 친화적인 생활을 위한 AI 상담", icon: "🤖", path: "/chat" },
     { id: 5, title: "대시보드", description: "나의 에코 활동 현황을 확인하세요", icon: "📊", path: "/dashboard" },
-    { id: 6, title: "챌린지", description: "환경 보호 챌린지에 참여하세요", icon: "🏆", path: "/challenge" },
-    { id: 7, title: "성과", description: "달성한 성과를 확인하세요", icon: "🎖️", path: "/achievements" },
+    { id: 6, title: "챌린지 & 업적", description: "챌린지 참여하고 업적을 달성하세요", icon: "🏆", path: "/challenge-achievements" },
     { id: 8, title: "탄소 절감", description: "탄소 절감 방법을 알아보세요", icon: "🌍", path: "/dashboard" },
     { id: 9, title: "에코 크레딧", description: "에코 크레딧에 대해 알아보세요", icon: "💚", path: "/credit" },
     { id: 10, title: "정원 관리", description: "가상 정원 관리 팁을 확인하세요", icon: "🌿", path: "/mygarden" },
@@ -72,21 +72,6 @@ function AppContent() {
     setShowSearchResults(false);
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      const dropdown = document.querySelector(".dropdown");
-
-      if (dropdown && !dropdown.contains(target)) {
-        setServiceOpen(false);
-      }
-    };
-
-    if (serviceOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [serviceOpen]);
 
   const newsItems = [
     { id: 1, text: "오늘의 에너지 절약 팁: 사용하지 않는 플러그는 뽑아두세요!" },
@@ -102,34 +87,26 @@ function AppContent() {
           <div className="container">
             <Logo />
             <nav className="main-nav">
-              <ul>
+              <div className="main-features">
+                <Link to="/dashboard" className="main-feature-btn dashboard-btn">
+                  <span className="feature-icon">📊</span>
+                  <span className="feature-text">Dashboard</span>
+                </Link>
+                <Link to="/chat" className="main-feature-btn chat-btn">
+                  <span className="feature-icon">🤖</span>
+                  <span className="feature-text">AI 챗봇</span>
+                </Link>
+                <Link to="/mygarden" className="main-feature-btn garden-btn">
+                  <span className="feature-icon">🌿</span>
+                  <span className="feature-text">나만의 정원</span>
+                </Link>
+              </div>
+              <ul className="secondary-nav">
                 <li>
                   <Link to="/about">About Us</Link>
                 </li>
                 <li>
-                  <Link to="/dashboard">Dashboard</Link>
-                </li>
-                <li className="dropdown">
-                  <button className="dropdown-toggle" onClick={toggleServiceMenu}>
-                    Service ▾
-                  </button>
-                  {serviceOpen && (
-                    <ul className="dropdown-menu">
-                      <li>
-                        <Link to="/chat">Chat</Link>
-                      </li>
-                      <li>
-                        <Link to="/mygarden">나만의 정원</Link>
-                      </li>
-                      <li><Link to="/gardenchat">정원+챗봇 통합</Link></li>
-                      <li>
-                        <Link to="/challenge">Challenge</Link>
-                      </li>
-                      <li>
-                        <Link to="/achievements">Achievements</Link>
-                      </li>
-                    </ul>
-                  )}
+                  <Link to="/challenge-achievements">챌린지 & 업적</Link>
                 </li>
                 <li>
                   <Link to="/credit">Credit</Link>
@@ -154,30 +131,38 @@ function AppContent() {
               <>
                 <section id="hero" className="hero-section">
                   <div className="hero-content">
-                    <h1 className="hero-title" style={{ fontSize: "1.5rem" }}>
-                      🌱 오늘의 작은 발걸음, 내일의 숲을 키웁니다!
+                    <h1 className="hero-title">
+                      🌱 AI와 함께하는 친환경 생활
                     </h1>
-                    <div className="garden-wrapper">
-                      <img
-                        src="/mygarden.png"
-                        alt="나만의 정원"
-                        className="garden-img"
-                        style={{ width: "750px", height: "auto" }}
-                      />
+                    <p className="hero-subtitle">
+                      실시간 이동 인식으로 크레딧을 적립하고,<br/>AI 챗봇과 함께 지속가능한 미래를 만들어가세요
+                    </p>
+                    <div className="hero-features">
+                      <div className="feature-card">
+                        <div className="feature-icon">🤖</div>
+                        <h3>AI 챗봇</h3>
+                        <p>환경 친화적인 생활을 위한<br/>개인 맞춤 상담</p>
+                        <Link to="/chat" className="feature-btn">챗봇 시작하기</Link>
+                      </div>
+                      <div className="feature-card">
+                        <div className="feature-icon">🚶‍♀️</div>
+                        <h3>실시간 크레딧</h3>
+                        <p>도보, 자전거, 대중교통 이용 시<br/>자동으로 크레딧 적립</p>
+                        <Link to="/credit" className="feature-btn">크레딧 확인</Link>
+                      </div>
+                      <div className="feature-card">
+                        <div className="feature-icon">🌿</div>
+                        <h3>나만의 정원</h3>
+                        <p>적립한 크레딧으로<br/>가상 정원을 꾸며보세요</p>
+                        <Link to="/mygarden" className="feature-btn">정원 가기</Link>
+                      </div>
                     </div>
-                    <NewsTicker news={newsItems} />
                   </div>
                   <div className="hero-bg" />
                 </section>
 
-                <section className="garden-shortcut-section">
-                  <div className="container">
-                    <div className="garden-shortcut-wrapper">
-                      <Link to="/mygarden" className="garden-button">
-                        나만의 정원 바로가기
-                      </Link>
-                    </div>
-                  </div>
+                <section className="news-ticker-section">
+                  <NewsTicker news={newsItems} />
                 </section>
 
                 <section id="service" className="content-section service-experience-section">
@@ -185,7 +170,7 @@ function AppContent() {
                     <div className="section-header text-center">
                       <h2>서비스 체험</h2>
                       <p className="subtitle">
-                        Ecoo 챗봇과 대시보드를 통해 탄소 절감 활동을 직접 경험해보세요.
+                        AI 챗봇, 크레딧 현황, 나만의 정원을 통해 탄소 절감 활동을 직접 경험해보세요.
                       </p>
                     </div>
                     <div className="service-grid">
@@ -208,6 +193,17 @@ function AppContent() {
                           title="Credit Preview"
                         ></iframe>
                         <Link to="/credit" className="detail-btn">
+                          자세히
+                        </Link>
+                      </div>
+                      <div className="service-card">
+                        <h3>🌿 나만의 정원</h3>
+                        <iframe
+                          src="/mygarden?preview=1"
+                          className="preview-frame"
+                          title="My Garden Preview"
+                        ></iframe>
+                        <Link to="/mygarden" className="detail-btn">
                           자세히
                         </Link>
                       </div>
@@ -270,7 +266,7 @@ function AppContent() {
                         <div className="popular-searches">
                           <h3 className="popular-title">인기 검색어</h3>
                           <div className="popular-tags">
-                            {["포인트", "정원", "챗봇", "대시보드", "챌린지", "탄소절감"].map((tag) => (
+                            {["포인트", "정원", "챗봇", "대시보드", "챌린지", "업적", "탄소절감"].map((tag) => (
                               <button key={tag} onClick={() => handleSearch(tag)} className="popular-tag">
                                 {tag}
                               </button>
@@ -288,8 +284,7 @@ function AppContent() {
           <Route path="/chat" element={<Chat />} />
           <Route path="/mygarden" element={<MyGarden />} />
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/challenge" element={<Challenge />} />
-          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/challenge-achievements" element={<ChallengeAchievements />} />
           <Route path="/credit" element={<Credit />} />
           <Route path="/credit/points" element={<CreditPoints />} />
           <Route path="/credit/recent" element={<CreditRecent />} />

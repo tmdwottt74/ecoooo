@@ -46,6 +46,7 @@ const MyGarden: React.FC = () => {
     ecoPoints: 1240,
   });
   const [loading, setLoading] = useState(true);
+  const [isPreview, setIsPreview] = useState(false);
 
   const [stage, setStage] = useState(0);
   const [waterCount, setWaterCount] = useState(0);
@@ -53,6 +54,11 @@ const MyGarden: React.FC = () => {
   const [statusMessage, setStatusMessage] = useState<string>("");
 
   useEffect(() => {
+    // 미리보기 모드 확인
+    const urlParams = new URLSearchParams(window.location.search);
+    const previewMode = urlParams.get('preview') === '1';
+    setIsPreview(previewMode);
+
     const fetchGardenData = async () => {
       try {
         const response = await fetch(
@@ -117,6 +123,34 @@ const MyGarden: React.FC = () => {
   const plantStage = getPlantStage(stage + 1);
   const weatherClass =
     gardenData.totalCarbonReduced > 1000 ? "weather-sunny" : "weather-rainy";
+
+  // 미리보기 모드일 때 간소화된 디자인
+  if (isPreview) {
+    return (
+      <div className="garden-preview-card">
+        <div className="preview-header">
+          <h3>🌿 나만의 정원</h3>
+          <div className="preview-stats">
+            <span className="stat-item">P {gardenData.ecoPoints}</span>
+            <span className="stat-item">Lv.{stage + 1}</span>
+          </div>
+        </div>
+        
+        <div className="preview-garden">
+          <img
+            src={levelImages[Math.min(stage, levelImages.length - 1)]}
+            alt={getPlantStage(stage + 1)}
+            className="preview-plant"
+          />
+        </div>
+        
+        <div className="preview-info">
+          <p className="preview-stage">{plantStage}</p>
+          <p className="preview-carbon">탄소 절감: {gardenData.totalCarbonReduced}kg</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`garden-card ${weatherClass}`}>
