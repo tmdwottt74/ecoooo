@@ -1,161 +1,218 @@
-.my-garden-container {
-  background-color: #fdfdf5; /* 이미지 참고: 연한 노란색 배경 */
-  border-radius: 50%; /* 완벽한 원형 */
-  border: 5px solid #d4edda; /* 이미지 참고: 녹색 테두리 */
-  padding: 20px;
-  width: 250px; /* 원형 크기 조정 */
-  height: 250px; /* 원형 크기 조정 */
-  display: flex; /* 내부 요소 정렬을 위해 flex 사용 */
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+/* ==============================
+   정원 컨테이너 (카드 스타일)
+   ============================== */
+.garden-card {
   text-align: center;
-  font-family: 'Arial', sans-serif;
-  color: #333;
-  position: relative; /* 흙과 식물 위치 지정을 위해 */
-  overflow: hidden; /* 흙이 밖으로 나가지 않도록 */
+  padding: 2.5rem;
+  background: linear-gradient(135deg, #f8fffe 0%, #e8f5f3 100%);
+  border-radius: 24px;
+  box-shadow: 0 15px 35px rgba(26, 188, 156, 0.15);
+  color: #2c3e50;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(26, 188, 156, 0.1);
 }
 
-.garden-soil {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 50%; /* 원의 절반 */
-  background-color: #c9a07b; /* 흙 색상 */
-  border-radius: 0 0 50% 50% / 0 0 100% 100%; /* 아래쪽만 둥글게 */
-}
-/* MyGarden.css - Additions for visual gamification */
-/* Your existing styles... */
-
-/* Specific plant stage images/classes */
-.plant-display img {
-    /* 기존 스타일 유지... */
-    transition: transform 0.5s ease-in-out; /* 성장 애니메이션 효과 */
-}
-
-/* MyGarden.css */
-.garden-level-1 {
-  background-image: url('../../public/seed.png');
-}
-
-.garden-level-2 {
-  background-image: url('../../public/sprout.png');
-}
-
-.garden-level-3 {
-  background-image: url('../../public/flower.png');
-}
-
-.garden-level-4 {
-  background-image: url('../../public/tree.png');
-}
-/* Weather effects */
-.weather-sunny {
-    /* 맑은 날씨 효과 (배경색 변경, 반짝이 효과 등) */
-    background: linear-gradient(to bottom, #87ceeb, #e0f6ff);
-}
-.weather-rainy {
-    /* 비 오는 날씨 효과 (어두운 배경, 빗방울 애니메이션 등) */
-    background: linear-gradient(to bottom, #7f8c8d, #bdc3c7);
-}
-.garden-plant {
-  position: absolute;
-  top: 30%; /* 흙 위에 식물 위치 */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 80px;
-  background-color: #8bc34a; /* 식물 색상 */
-  border-radius: 50%; /* 잎 모양 */
-  z-index: 1; /* 흙 위에 오도록 */
-}
-
-.garden-plant::before, .garden-plant::after {
+.garden-card::before {
   content: '';
   position: absolute;
-  background-color: #8bc34a;
-  border-radius: 50%;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #1abc9c, #16a085, #1abc9c);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
 }
 
-.garden-plant::before {
-  width: 60px;
-  height: 60px;
-  top: -20px;
-  left: -10px;
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
-.garden-plant::after {
-  width: 60px;
-  height: 60px;
-  top: -20px;
-  right: -10px;
+/* ==============================
+   칩 스타일
+   ============================== */
+.garden-chips {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 8px 0 14px;
+  flex-wrap: wrap;
 }
 
-.garden-plant-stem {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 10px;
-  height: 40px;
-  background-color: #a1887f; /* 줄기 색상 */
-  border-radius: 5px;
-  z-index: 0;
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-.garden-stats, .garden-message, .my-garden-container h3 {
+.chip-points { 
+  background: linear-gradient(135deg, #d1fae5, #bbf7d0);
+  color: #2e7d32;
+}
+.chip-stage { 
+  background: linear-gradient(135deg, #bbf7d0, #a7f3d0);
+  color: #0f766e;
+}
+.chip-level { 
+  background: linear-gradient(135deg, #a7f3d0, #86efac);
+  color: #7c3aed;
+}
+/* 🌟 장식 칩 */
+.chip-decorate {
+  background: linear-gradient(135deg, #fef9c3, #fde68a);
+  color: #92400e;
+}
+
+/* ==============================
+   성장 이미지 + 애니메이션
+   ============================== */
+.garden-stage {
   position: relative;
-  z-index: 2; /* 흙과 식물 위에 오도록 */
-  color: #333;
-  margin: 0; /* 기본 마진 제거 */
+  height: 360px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  border-radius: 24px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0b3d2c 0%, #1a5f3f 100%);
+  border: 2px solid rgba(26, 188, 156, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
-.my-garden-container h3 {
-  font-size: 1.2em;
-  margin-bottom: 5px; /* 제목 아래 간격 */
+.garden-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at top, rgba(255,255,255,0.10), rgba(255,255,255,0));
+  pointer-events: none;
 }
 
-.garden-stats p {
-  font-size: 0.8em;
-  margin: 1px 0;
+.plant {
+  max-height: 280px;
+  width: auto;
+  filter: drop-shadow(0 12px 24px rgba(0,0,0,0.3));
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), filter 0.4s ease;
+  z-index: 2;
+  position: relative;
 }
 
+.plant.animate {
+  transform: scale(1.06);
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.2));
+}
+
+/* ==============================
+   물주기 버튼
+   ============================== */
+.water-btn {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  color: white;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: 0 8px 25px rgba(26, 188, 156, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.water-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.water-btn:hover::before {
+  left: 100%;
+}
+
+.water-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(26, 188, 156, 0.4);
+}
+
+.water-btn:active {
+  transform: translateY(-1px);
+}
+
+/* ==============================
+   텍스트
+   ============================== */
+.level-text {
+  margin-top: 1rem;
+  font-size: 1rem;
+  color: #2d5016;
+}
+
+.garden-stats,
 .garden-message {
-  font-size: 0.7em;
-  margin-top: 5px;
-}
-
-.garden-trees {
-  display: none; /* 더미 데이터는 이제 원형 컨테이너 안에 직접 표시 */
-}
-
-/* MyGarden.css */
-.garden-card {
-  background: #fdfdf5;
+  color: #2c3e50;
+  margin: 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 0.8rem 1.2rem;
   border-radius: 15px;
-  padding: 20px;
-  text-align: center;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(26, 188, 156, 0.2);
 }
 
-.plant-display img {
-  margin: 15px 0;
-  border-radius: 50%;
-  border: 3px solid #1abc9c;
+/* ==============================
+   날씨 효과
+   ============================== */
+.weather-sunny {
+  background: linear-gradient(to bottom, #87ceeb, #e0f6ff);
+}
+.weather-rainy {
+  background: linear-gradient(to bottom, #f5f5f0, #e8e8e0);
 }
 
+/* ==============================
+   프로그레스바
+   ============================== */
 .progress-bar {
   width: 100%;
-  height: 10px;
-  background: #eee;
-  border-radius: 5px;
-  margin: 10px 0;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 20px;
+  margin: 1.5rem 0;
   overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(26, 188, 156, 0.2);
 }
 
 .progress {
   height: 100%;
-  background: #1abc9c;
+  background: linear-gradient(90deg, #1abc9c, #16a085);
+  border-radius: 20px;
+  transition: width 0.3s ease;
+  box-shadow: 0 2px 8px rgba(26, 188, 156, 0.3);
+}
+
+/* 🌟 에코포인트 진행도 바 */
+.eco-progress .progress {
+  background: linear-gradient(90deg, #facc15, #f59e0b);
+}
+
+/* 반응형 조정 */
+@media (max-width: 480px) {
+  .garden-stage { height: 280px; }
+  .plant { max-height: 220px; }
 }

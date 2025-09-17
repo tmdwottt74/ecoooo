@@ -1,298 +1,183 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+from pydantic import BaseModel
+from typing import Optional, List, Dict, Any
 from datetime import datetime
-from decimal import Decimal
-import enum
+from enum import Enum
 
-# ✅ 최근 7일 절감량 응답 모델
-class DailySavingResponse(BaseModel):
-    date: str      # 날짜 (YYYY-MM-DD)
-    saved_g: float # 절감량(g)
+class CreditType(str, Enum):
+    EARN = "EARN"
+    SPEND = "SPEND"
+    ADJUST = "ADJUST"
 
-# 📌 교통수단별 절감량 응답 모델
-class ModeStatResponse(BaseModel):
-    mode: str      # 이동수단 이름 (subway, bus, bike, walk 등)
-    saved_g: float # 절감량(g)
-    
-# =========================
-# ENUM 정의
-# =========================
-class GroupType(str, enum.Enum):
-    SCHOOL = "SCHOOL"
-    COMPANY = "COMPANY"
-    COMMUNITY = "COMMUNITY"
-    ETC = "ETC"
-
-class UserRole(str, enum.Enum):
-    USER = "USER"
-    ADMIN = "ADMIN"
-
-class Mode(str, enum.Enum):
+class TransportMode(str, Enum):
     BUS = "BUS"
     SUBWAY = "SUBWAY"
     BIKE = "BIKE"
     WALK = "WALK"
     CAR = "CAR"
 
-class ChallengeScope(str, enum.Enum):
-    PERSONAL = "PERSONAL"
-    GROUP = "GROUP"
+class GardenStatusEnum(str, Enum):
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
 
-class ChallengeTarget(str, enum.Enum):
-    ANY = "ANY"
-    BUS = "BUS"
-    SUBWAY = "SUBWAY"
-    BIKE = "BIKE"
-    WALK = "WALK"
-
-class LedgerType(str, enum.Enum):
-    EARN = "EARN"
-    SPEND = "SPEND"
-    ADJUST = "ADJUST"
-
-class NotificationStatus(str, enum.Enum):
-    PENDING = "PENDING"
-    SENT = "SENT"
-    READ = "READ"
-
-
-# =========================
-# 그룹(UserGroup)
-# =========================
-class UserGroupBase(BaseModel):
-    group_name: str
-    group_type: GroupType = GroupType.ETC
-    region_code: Optional[str] = None
-
-class UserGroupCreate(UserGroupBase):
-    pass
-
-class UserGroupRead(UserGroupBase):
-    group_id: int
-    created_at: datetime
-    class Config:
-        from_attributes = True
-
-
-# =========================
-# 사용자(User)
-# =========================
-class UserBase(BaseModel):
-    username: str
-    email: Optional[EmailStr] = None
-    role: UserRole = UserRole.USER
-
-class UserCreate(UserBase):
-    password_hash: Optional[str] = None
-    user_group_id: Optional[int] = None
-
-class UserRead(UserBase):
-    user_id: int     # PK는 user_id로 유지
-    created_at: datetime
-    user_group_id: Optional[int] = None
-    class Config:
-        from_attributes = True
-
-# ✅ 추가: AI 맥락 조회용 스키마
-class UserContext(BaseModel):
-    username: str
-    group_name: Optional[str] = None
-    group_type: Optional[GroupType] = None
-
-
-# =========================
-# 탄소 배출 계수(CarbonFactor)
-# =========================
-class CarbonFactorBase(BaseModel):
-    mode: Mode
-    g_per_km: float
-    valid_from: datetime
-    valid_to: Optional[datetime] = datetime(9999, 12, 31)
-
-class CarbonFactorCreate(CarbonFactorBase):
-    pass
-
-class CarbonFactorRead(CarbonFactorBase):
-    factor_id: int
-    class Config:
-        from_attributes = True
-
-
-# =========================
-# 외부 소스(IngestSource)
-# =========================
-class IngestSourceBase(BaseModel):
-    source_name: str
-    description: Optional[str] = None
-
-class IngestSourceCreate(IngestSourceBase):
-    pass
-
-class IngestSourceRead(IngestSourceBase):
-    source_id: int
-    class Config:
-        from_attributes = True
-
-
-# =========================
-# 이동 기록(MobilityLog)
-# =========================
-class MobilityLogBase(BaseModel):
-    mode: Mode
-    distance_km: Decimal
-    started_at: datetime
-    ended_at: datetime
-    raw_ref_id: Optional[str] = None
-    co2_baseline_g: Optional[Decimal] = None
-    co2_actual_g: Optional[Decimal] = None
-    co2_saved_g: Optional[Decimal] = None
-
-class MobilityLogCreate(MobilityLogBase):
+# 크레딧 관련 스키마
+class CreditBalance(BaseModel):
     user_id: int
-    source_id: Optional[int] = None
+    total_points: int
+    recent_earned: int
+    last_updated: datetime
 
-class MobilityLogRead(MobilityLogBase):
-    log_id: int
-    user_id: int
-    source_id: Optional[int] = None
-    created_at: datetime
-    class Config:
-        from_attributes = True
-
-
-# =========================
-# 포인트/크레딧(CreditsLedger)
-# =========================
-class CreditsLedgerBase(BaseModel):
-    type: LedgerType
+class CreditTransaction(BaseModel):
+    entry_id: int
+    type: CreditType
     points: int
     reason: str
-    meta_json: Optional[dict] = None
-
-class CreditsLedgerCreate(CreditsLedgerBase):
-    user_id: int
-    ref_log_id: Optional[int] = None
-
-class CreditsLedgerRead(CreditsLedgerBase):
-    entry_id: int
-    user_id: int
-    ref_log_id: Optional[int] = None
     created_at: datetime
-    class Config:
-        from_attributes = True
+    meta: Optional[Dict[str, Any]] = None
 
+class CreditHistory(BaseModel):
+    user_id: int
+    transactions: List[CreditTransaction]
+    total_count: int
 
-# =========================
-# 챌린지(Challenge)
-# =========================
-class ChallengeBase(BaseModel):
+# 정원 관련 스키마
+class GardenStatus(BaseModel):
+    user_id: int
+    level_number: int
+    level_name: str
+    image_path: str
+    waters_count: int
+    total_waters: int
+    required_waters: int
+    status: GardenStatusEnum
+
+class WateringRequest(BaseModel):
+    user_id: int
+    points_spent: int = 10
+
+class WateringResponse(BaseModel):
+    success: bool
+    garden_id: int
+    waters_count: int
+    total_waters: int
+    level_up: bool
+    new_level: Optional[str] = None
+    points_spent: int
+    remaining_points: int
+
+# 대시보드 관련 스키마
+class DashboardStats(BaseModel):
+    user_id: int
+    total_points: int
+    total_co2_saved: float
+    recent_activities: int
+    garden_level: int
+    garden_progress: int
+
+class MobilityLog(BaseModel):
+    log_id: int
+    mode: TransportMode
+    distance_km: float
+    started_at: datetime
+    ended_at: datetime
+    co2_saved_g: float
+    points_earned: int
+    description: Optional[str] = None
+    start_point: Optional[str] = None
+    end_point: Optional[str] = None
+
+# 챌린지 관련 스키마
+class Challenge(BaseModel):
+    challenge_id: int
     title: str
     description: Optional[str] = None
-    scope: ChallengeScope = ChallengeScope.PERSONAL
-    target_mode: ChallengeTarget = ChallengeTarget.ANY
+    scope: str
+    target_mode: str
     target_saved_g: int
     start_at: datetime
     end_at: datetime
-
-class ChallengeCreate(ChallengeBase):
     created_by: Optional[int] = None
-
-class ChallengeRead(ChallengeBase):
-    challenge_id: int
     created_at: datetime
-    class Config:
-        from_attributes = True
 
-class ChallengeMemberBase(BaseModel):
+class ChallengeMember(BaseModel):
     challenge_id: int
     user_id: int
-
-class ChallengeMemberRead(ChallengeMemberBase):
     joined_at: datetime
-    class Config:
-        from_attributes = True
 
-
-# =========================
-# 업적(Achievement)
-# =========================
-class AchievementBase(BaseModel):
-    code: Optional[str] = None
+# 업적 관련 스키마
+class Achievement(BaseModel):
+    achievement_id: int
+    code: str
     title: str
     description: Optional[str] = None
 
-class AchievementCreate(AchievementBase):
-    pass
-
-class AchievementRead(AchievementBase):
-    achievement_id: int
-    class Config:
-        from_attributes = True
-
-class UserAchievementBase(BaseModel):
+class UserAchievement(BaseModel):
     user_id: int
     achievement_id: int
-
-class UserAchievementRead(UserAchievementBase):
     granted_at: datetime
-    class Config:
-        from_attributes = True
 
-
-# =========================
-# 알림(Notification)
-# =========================
-class NotificationBase(BaseModel):
-    title: str
-    body: Optional[str] = None
-    status: NotificationStatus = NotificationStatus.PENDING
-
-class NotificationCreate(NotificationBase):
-    user_id: int
-
-class NotificationRead(NotificationBase):
+# 알림 관련 스키마
+class Notification(BaseModel):
     notification_id: int
     user_id: int
+    title: str
+    body: Optional[str] = None
+    status: str
     created_at: datetime
-    read_at: Optional[datetime]
-    class Config:
-        from_attributes = True
+    read_at: Optional[datetime] = None
 
+# 사용자 관련 스키마
+class User(BaseModel):
+    user_id: int
+    username: str
+    email: Optional[str] = None
+    user_group_id: Optional[int] = None
+    role: str
+    created_at: datetime
 
-# =========================
-# 원시 적재(IngestRaw)
-# =========================
-class IngestRawBase(BaseModel):
-    source_id: int
-    user_id: Optional[int] = None
-    captured_at: datetime
-    payload: dict
+class UserGroup(BaseModel):
+    group_id: int
+    group_name: str
+    group_type: str
+    region_code: Optional[str] = None
+    created_at: datetime
 
-class IngestRawCreate(IngestRawBase):
-    pass
+# 탄소 배출 계수 스키마
+class CarbonFactor(BaseModel):
+    factor_id: int
+    mode: TransportMode
+    g_per_km: float
+    valid_from: datetime
+    valid_to: Optional[datetime] = None
 
-class IngestRawRead(IngestRawBase):
-    raw_id: int
-    class Config:
-        from_attributes = True
+# 통계 관련 스키마
+class DailyStats(BaseModel):
+    date: str
+    co2_saved: float
+    points_earned: int
+    activities_count: int
 
+class WeeklyStats(BaseModel):
+    week_start: str
+    week_end: str
+    total_co2_saved: float
+    total_points_earned: int
+    total_activities: int
+    daily_breakdown: List[DailyStats]
 
-# =========================
-# Mock API 스키마
-# =========================
-class ChatMessage(BaseModel):
-    user_id: str
+class MonthlyStats(BaseModel):
+    month: str
+    total_co2_saved: float
+    total_points_earned: int
+    total_activities: int
+    weekly_breakdown: List[WeeklyStats]
+
+# API 응답 스키마
+class APIResponse(BaseModel):
+    success: bool
     message: str
+    data: Optional[Dict[str, Any]] = None
 
-class ChatResponse(BaseModel):
-    response_message: str
-
-class DashboardData(BaseModel):
-    user_id: str
-    co2_saved_today: float
-    eco_credits_earned: int
-    garden_level: int
-
-class Activity(BaseModel):
-    user_id: str
-    activity_type: str  # e.g., 'subway', 'bike'
+class ErrorResponse(BaseModel):
+    success: bool = False
+    error: str
+    detail: Optional[str] = None

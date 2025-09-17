@@ -1,0 +1,338 @@
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from datetime import datetime, timedelta
+import json
+
+from ..database import get_db
+from ..models import User, CreditsLedger, MobilityLog, UserGarden, GardenWateringLog, GardenLevel
+from ..schemas import (
+    CreditBalance, CreditTransaction, CreditHistory, 
+    GardenStatus, WateringRequest, WateringResponse
+)
+
+router = APIRouter(prefix="/api/credits", tags=["credits"])
+
+# 크레딧 잔액 조회
+@router.get("/balance/{user_id}", response_model=CreditBalance)
+async def get_credit_balance(user_id: int, db: Session = Depends(get_db)):
+    """사용자의 크레딧 잔액을 조회합니다."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 총 포인트 계산
+    total_points = db.query(CreditsLedger).filter(
+        CreditsLedger.user_id == user_id
+    ).with_entities(
+        db.func.sum(CreditsLedger.points)
+    ).scalar() or 0
+    
+    # 최근 30일 적립 포인트
+    thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+    recent_earned = db.query(CreditsLedger).filter(
+        CreditsLedger.user_id == user_id,
+        CreditsLedger.type == "EARN",
+        CreditsLedger.created_at >= thirty_days_ago
+    ).with_entities(
+        db.func.sum(CreditsLedger.points)
+    ).scalar() or 0
+    
+    return CreditBalance(
+        user_id=user_id,
+        total_points=total_points,
+        recent_earned=recent_earned,
+        last_updated=datetime.utcnow()
+    )
+
+# 크레딧 거래 내역 조회
+@router.get("/history/{user_id}", response_model=List[CreditTransaction])
+async def get_credit_history(
+    user_id: int, 
+    limit: int = 20, 
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """사용자의 크레딧 거래 내역을 조회합니다."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    transactions = db.query(CreditsLedger).filter(
+        CreditsLedger.user_id == user_id
+    ).order_by(
+        CreditsLedger.created_at.desc()
+    ).offset(offset).limit(limit).all()
+    
+    return [
+        CreditTransaction(
+            entry_id=tx.entry_id,
+            type=tx.type,
+            points=tx.points,
+            reason=tx.reason,
+            created_at=tx.created_at,
+            meta=tx.meta_json
+        )
+        for tx in transactions
+    ]
+
+# 포인트 적립
+@router.post("/earn", response_model=CreditTransaction)
+async def earn_points(
+    user_id: int,
+    points: int,
+    reason: str,
+    ref_log_id: Optional[int] = None,
+    meta: Optional[dict] = None,
+    db: Session = Depends(get_db)
+):
+    """사용자에게 포인트를 적립합니다."""
+    if points <= 0:
+        raise HTTPException(status_code=400, detail="Points must be positive")
+    
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 크레딧 장부에 기록
+    credit_entry = CreditsLedger(
+        user_id=user_id,
+        ref_log_id=ref_log_id,
+        type="EARN",
+        points=points,
+        reason=reason,
+        meta_json=meta
+    )
+    
+    db.add(credit_entry)
+    db.commit()
+    db.refresh(credit_entry)
+    
+    return CreditTransaction(
+        entry_id=credit_entry.entry_id,
+        type=credit_entry.type,
+        points=credit_entry.points,
+        reason=credit_entry.reason,
+        created_at=credit_entry.created_at,
+        meta=credit_entry.meta_json
+    )
+
+# 포인트 사용
+@router.post("/spend", response_model=CreditTransaction)
+async def spend_points(
+    user_id: int,
+    points: int,
+    reason: str,
+    meta: Optional[dict] = None,
+    db: Session = Depends(get_db)
+):
+    """사용자의 포인트를 차감합니다."""
+    if points <= 0:
+        raise HTTPException(status_code=400, detail="Points must be positive")
+    
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 현재 잔액 확인
+    current_balance = db.query(CreditsLedger).filter(
+        CreditsLedger.user_id == user_id
+    ).with_entities(
+        db.func.sum(CreditsLedger.points)
+    ).scalar() or 0
+    
+    if current_balance < points:
+        raise HTTPException(status_code=400, detail="Insufficient points")
+    
+    # 크레딧 장부에 기록 (음수로 저장)
+    credit_entry = CreditsLedger(
+        user_id=user_id,
+        type="SPEND",
+        points=-points,
+        reason=reason,
+        meta_json=meta
+    )
+    
+    db.add(credit_entry)
+    db.commit()
+    db.refresh(credit_entry)
+    
+    return CreditTransaction(
+        entry_id=credit_entry.entry_id,
+        type=credit_entry.type,
+        points=credit_entry.points,
+        reason=credit_entry.reason,
+        created_at=credit_entry.created_at,
+        meta=credit_entry.meta_json
+    )
+
+# 정원 물주기
+@router.post("/garden/water", response_model=WateringResponse)
+async def water_garden(
+    request: WateringRequest,
+    db: Session = Depends(get_db)
+):
+    """정원에 물을 줍니다."""
+    user = db.query(User).filter(User.user_id == request.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # 사용자 정원 조회
+    garden = db.query(UserGarden).filter(
+        UserGarden.user_id == request.user_id
+    ).first()
+    
+    if not garden:
+        # 첫 번째 레벨로 정원 생성
+        first_level = db.query(GardenLevel).filter(
+            GardenLevel.level_number == 1
+        ).first()
+        if not first_level:
+            raise HTTPException(status_code=500, detail="Garden levels not initialized")
+        
+        garden = UserGarden(
+            user_id=request.user_id,
+            current_level_id=first_level.level_id,
+            waters_count=0,
+            total_waters=0
+        )
+        db.add(garden)
+        db.commit()
+        db.refresh(garden)
+    
+    # 현재 잔액 확인
+    current_balance = db.query(CreditsLedger).filter(
+        CreditsLedger.user_id == request.user_id
+    ).with_entities(
+        db.func.sum(CreditsLedger.points)
+    ).scalar() or 0
+    
+    if current_balance < request.points_spent:
+        raise HTTPException(status_code=400, detail="Insufficient points")
+    
+    # 포인트 차감
+    credit_entry = CreditsLedger(
+        user_id=request.user_id,
+        type="SPEND",
+        points=-request.points_spent,
+        reason="GARDEN_WATERING",
+        meta_json={"garden_id": garden.garden_id}
+    )
+    db.add(credit_entry)
+    
+    # 물주기 로그 기록
+    watering_log = GardenWateringLog(
+        garden_id=garden.garden_id,
+        user_id=request.user_id,
+        points_spent=request.points_spent
+    )
+    db.add(watering_log)
+    
+    # 정원 상태 업데이트
+    garden.waters_count += 1
+    garden.total_waters += 1
+    
+    # 레벨 업 체크
+    current_level = garden.level
+    level_up = False
+    new_level = None
+    
+    if garden.waters_count >= current_level.required_waters:
+        # 다음 레벨로 업그레이드
+        next_level = db.query(GardenLevel).filter(
+            GardenLevel.level_number == current_level.level_number + 1
+        ).first()
+        
+        if next_level:
+            garden.current_level_id = next_level.level_id
+            garden.waters_count = 0
+            level_up = True
+            new_level = next_level
+    
+    db.commit()
+    db.refresh(garden)
+    
+    return WateringResponse(
+        success=True,
+        garden_id=garden.garden_id,
+        waters_count=garden.waters_count,
+        total_waters=garden.total_waters,
+        level_up=level_up,
+        new_level=new_level.level_name if new_level else None,
+        points_spent=request.points_spent,
+        remaining_points=current_balance - request.points_spent
+    )
+
+# 정원 상태 조회
+@router.get("/garden/{user_id}", response_model=GardenStatus)
+async def get_garden_status(user_id: int, db: Session = Depends(get_db)):
+    """사용자의 정원 상태를 조회합니다."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    garden = db.query(UserGarden).filter(
+        UserGarden.user_id == user_id
+    ).first()
+    
+    if not garden:
+        # 기본 정원 상태 반환
+        return GardenStatus(
+            user_id=user_id,
+            level_number=1,
+            level_name="씨앗단계",
+            image_path="/images/0.png",
+            waters_count=0,
+            total_waters=0,
+            required_waters=10,
+            status="IN_PROGRESS"
+        )
+    
+    current_level = garden.level
+    
+    return GardenStatus(
+        user_id=user_id,
+        level_number=current_level.level_number,
+        level_name=current_level.level_name,
+        image_path=current_level.image_path,
+        waters_count=garden.waters_count,
+        total_waters=garden.total_waters,
+        required_waters=current_level.required_waters,
+        status="COMPLETED" if garden.waters_count >= current_level.required_waters else "IN_PROGRESS"
+    )
+
+# 대중교통 이용 내역 조회
+@router.get("/mobility/{user_id}", response_model=List[dict])
+async def get_mobility_history(
+    user_id: int,
+    limit: int = 20,
+    offset: int = 0,
+    db: Session = Depends(get_db)
+):
+    """사용자의 대중교통 이용 내역을 조회합니다."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    logs = db.query(MobilityLog).filter(
+        MobilityLog.user_id == user_id
+    ).order_by(
+        MobilityLog.started_at.desc()
+    ).offset(offset).limit(limit).all()
+    
+    return [
+        {
+            "log_id": log.log_id,
+            "mode": log.mode,
+            "distance_km": float(log.distance_km),
+            "started_at": log.started_at,
+            "ended_at": log.ended_at,
+            "co2_saved_g": float(log.co2_saved_g) if log.co2_saved_g else 0,
+            "points_earned": log.points_earned,
+            "description": log.description,
+            "start_point": log.start_point,
+            "end_point": log.end_point
+        }
+        for log in logs
+    ]
+
