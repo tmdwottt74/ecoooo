@@ -3,8 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from .database import init_db
-from .routes import dashboard, credits
+from .database import init_db, SessionLocal
+from .routes import dashboard, credits, challenges, auth, achievements, users, admin
+from .seed_admin_user import seed_admin_user
+from .bedrock_logic import router as chat_router
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -29,12 +31,25 @@ if os.path.exists("frontend/public"):
 # 라우터 등록
 app.include_router(dashboard.router)
 app.include_router(credits.router)
+app.include_router(challenges.router)
+app.include_router(auth.router)
+app.include_router(achievements.router)
+app.include_router(users.router)
+app.include_router(admin.router)
+app.include_router(chat_router)
 
 @app.on_event("startup")
 async def startup_event():
     """앱 시작시 실행되는 이벤트"""
     # 데이터베이스 테이블 생성
     init_db()
+
+    # 관리자 사용자 시드
+    db = SessionLocal()
+    try:
+        seed_admin_user(db)
+    finally:
+        db.close()
 
 @app.get("/")
 async def root():

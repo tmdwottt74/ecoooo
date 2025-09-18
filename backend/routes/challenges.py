@@ -1,48 +1,92 @@
 # routes/challenges.py
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from .. import database
+from typing import List
 
-router = APIRouter()
+from .. import database, models, schemas
 
-@router.get("/challenges/{user_id}")
+# /api/challenges 경로로 설정
+router = APIRouter(
+    prefix="/api/challenges",
+    tags=["Challenges"]
+)
+
+# 챌린지 참여 요청을 위한 Pydantic 모델
+class ChallengeJoinRequest(schemas.BaseModel):
+    user_id: int
+
+@router.post("/{challenge_id}/join")
+def join_challenge(
+    challenge_id: int, 
+    request: ChallengeJoinRequest, 
+    db: Session = Depends(database.get_db)
+):
+    """
+    사용자를 챌린지에 참여시킵니다.
+    이미 참여한 경우 오류를 반환합니다.
+    """
+    # 1. 챌린지 존재 여부 확인
+    challenge = db.query(models.Challenge).filter(models.Challenge.challenge_id == challenge_id).first()
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    # 2. 사용자 존재 여부 확인
+    user = db.query(models.User).filter(models.User.user_id == request.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # 3. 이미 참여했는지 확인 (핵심 버그 수정)
+    existing_member = db.query(models.ChallengeMember).filter(
+        models.ChallengeMember.challenge_id == challenge_id,
+        models.ChallengeMember.user_id == request.user_id
+    ).first()
+
+    if existing_member:
+        raise HTTPException(status_code=400, detail="Already joined this challenge")
+
+    # 4. 새 참여자로 등록
+    new_member = models.ChallengeMember(
+        challenge_id=challenge_id,
+        user_id=request.user_id
+    )
+    db.add(new_member)
+    db.commit()
+
+    return {"message": f"Successfully joined challenge '{challenge.title}'"}
+
+
+@router.get("/{user_id}", response_model=List[schemas.FrontendChallenge])
 def get_challenges(user_id: int, db: Session = Depends(database.get_db)):
     """
-    챌린지 목록을 반환합니다. 스키마에 진행률/보상 컬럼이 없으므로
-    현재는 사용자 진행률을 임의 계산하여 반환합니다.
+    사용자의 챌린지 목록과 참여 상태를 반환합니다.
     """
-    query = text(
-        """
-        SELECT c.challenge_id, c.title, c.description,
-               COALESCE(SUM(ml.co2_saved_g), 0) AS saved_g
-        FROM challenges c
-        LEFT JOIN challenge_members cm ON cm.challenge_id = c.challenge_id AND cm.user_id = :uid
-        LEFT JOIN mobility_logs ml ON ml.user_id = :uid
-        GROUP BY c.challenge_id, c.title, c.description
-        ORDER BY c.challenge_id
-        """
-    )
-    rows = db.execute(query, {"uid": user_id}).fetchall()
+    # 모든 챌린지 목록을 가져옴
+    all_challenges = db.query(models.Challenge).order_by(models.Challenge.challenge_id).all()
+    
+    # 사용자가 참여한 챌린지 ID 목록을 가져옴
+    joined_challenge_ids = {
+        member.challenge_id for member in 
+        db.query(models.ChallengeMember).filter(models.ChallengeMember.user_id == user_id).all()
+    }
 
     result = []
-    for r in rows:
-        # saved_g를 바탕으로 진행률(임의) 계산: 목표 10,000g
-        progress = min(100, int(float(r[3]) / 10000 * 100))
-        reward = "에코 크레딧 100P"
+    for c in all_challenges:
+        # TODO: 실제 진행률 계산 로직 필요
+        progress = 0 
+        if c.challenge_id in joined_challenge_ids:
+            # 참여한 챌린지의 경우 임시로 25% 진행률 부여
+            progress = 25 
+
         result.append({
-            "id": int(r[0]),
-            "title": r[1],
-            "description": r[2],
+            "id": c.challenge_id,
+            "title": c.title,
+            "description": c.description,
             "progress": progress,
-            "reward": reward,
+            "reward": c.reward,
+            "is_joined": c.challenge_id in joined_challenge_ids
         })
 
-    # 비어있을 경우 더미 반환
-    if not result:
-        result = [
-            {"id": 1, "title": "9월 대중교통 챌린지", "description": "지하철/버스 이용으로 CO₂ 절감", "progress": 40, "reward": "에코 크레딧 100P"}
-        ]
     return result
 
 

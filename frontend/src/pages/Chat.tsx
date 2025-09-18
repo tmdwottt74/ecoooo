@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import "./Chat.css";
 
@@ -14,6 +14,11 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const messagesEndRef = useRef<null | HTMLDivElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useCredits } from "../contexts/CreditsContext";
 
 const styles = `
 .challenge-page {
@@ -91,6 +90,11 @@ const styles = `
 .join-btn:hover {
   background: #1b5e20;
 }
+
+.join-btn:disabled {
+  background: #9e9e9e;
+  cursor: not-allowed;
+}
 `;
 
 interface ChallengeData {
@@ -99,127 +103,70 @@ interface ChallengeData {
   description: string;
   progress: number;
   reward: string;
+  is_joined: boolean; // 서버에서 받아올 참여 여부
 }
 
 const Challenge: React.FC = () => {
   const [challenges, setChallenges] = useState<ChallengeData[]>([]);
   const [loading, setLoading] = useState(true);
-  const { completeChallenge } = useCredits();
+  const [error, setError] = useState<string | null>(null);
+  
+  // TODO: 실제 앱에서는 로그인 상태로부터 user_id를 가져와야 합니다.
+  const userId = 1;
+  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
-  // localStorage에서 챌린지 상태 복원
-  const loadChallengesFromStorage = () => {
-    const stored = localStorage.getItem('challenge_progress');
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (error) {
-        console.error('Error parsing stored challenge data:', error);
-      }
-    }
-    return null;
-  };
-
-  // 챌린지 상태를 localStorage에 저장
-  const saveChallengesToStorage = (challengeData: ChallengeData[]) => {
-    localStorage.setItem('challenge_progress', JSON.stringify(challengeData));
-  };
-
-  // 챌린지 참여하기 핸들러
-  const handleJoinChallenge = async (challenge: ChallengeData) => {
+  // 서버에서 챌린지 목록을 가져오는 함수
+  const fetchChallenges = async () => {
     try {
-      // 챌린지 완료 처리
-      await completeChallenge(
-        challenge.id.toString(),
-        'daily',
-        parseInt(challenge.reward.replace(/[^0-9]/g, '')), // 숫자만 추출
-        challenge.title
-      );
-      
-      // 로컬 상태 업데이트
-      const updatedChallenges = challenges.map(c => 
-        c.id === challenge.id 
-          ? { ...c, progress: Math.min(c.progress + 25, 100) }
-          : c
-      );
-      
-      setChallenges(updatedChallenges);
-      
-      // localStorage에 상태 저장
-      saveChallengesToStorage(updatedChallenges);
-      
-      alert(`${challenge.title} 챌린지에 참여했습니다!`);
-    } catch (error) {
-      console.error('챌린지 참여 실패:', error);
-      alert('챌린지 참여 중 오류가 발생했습니다.');
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/challenges/${userId}`);
+      if (!response.ok) {
+        throw new Error('챌린지 정보를 불러오는 데 실패했습니다.');
+      }
+      const data = await response.json();
+      setChallenges(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '알 수 없는 오류 발생');
+      setChallenges([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 더미 데이터
-  const dummyChallenges: ChallengeData[] = [
-    {
-      id: 1,
-      title: "9월 대중교통 챌린지",
-      description: "이번 달 대중교통으로 10kg CO₂ 절감하기",
-      progress: 65,
-      reward: "에코 크레딧 200P + 뱃지"
-    },
-    {
-      id: 2,
-      title: "자전거 출퇴근 챌린지",
-      description: "한 달간 자전거로 출퇴근하여 5kg CO₂ 절감",
-      progress: 40,
-      reward: "에코 크레딧 150P + 뱃지"
-    },
-    {
-      id: 3,
-      title: "도보 생활 챌린지",
-      description: "일주일간 1km 이내는 도보로 이동하기",
-      progress: 80,
-      reward: "에코 크레딧 100P"
-    },
-    {
-      id: 4,
-      title: "친환경 이동 30일",
-      description: "30일 연속 친환경 교통수단 이용하기",
-      progress: 25,
-      reward: "에코 크레딧 300P + 특별 뱃지"
-    }
-  ];
-
+  // 컴포넌트가 마운트될 때 챌린지 데이터를 가져옵니다.
   useEffect(() => {
-    const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
-
-    // 먼저 localStorage에서 저장된 상태 확인
-    const storedChallenges = loadChallengesFromStorage();
-    if (storedChallenges) {
-      setChallenges(storedChallenges);
-      setLoading(false);
-      return;
-    }
-
-    // localStorage에 데이터가 없으면 API에서 가져오기
-    fetch(`${API_URL}/challenges/1`)
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("API 실패");
-      })
-      .then((data) => {
-        setChallenges(data);
-        saveChallengesToStorage(data); // 초기 데이터도 저장
-      })
-      .catch(() => {
-        // API 실패 시 더미 데이터 사용
-        setChallenges(dummyChallenges);
-        saveChallengesToStorage(dummyChallenges); // 더미 데이터도 저장
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-
+    fetchChallenges();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 챌린지 참여 처리 함수
+  const handleJoinChallenge = async (challengeId: number) => {
+    try {
+      const response = await fetch(`${API_URL}/api/challenges/${challengeId}/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_id: userId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || '챌린지 참여에 실패했습니다.');
+      }
+
+      alert('챌린지에 성공적으로 참여했습니다!');
+      // 참여 후 목록을 새로고침하여 UI를 업데이트합니다.
+      fetchChallenges();
+
+    } catch (error) {
+      console.error('챌린지 참여 실패:', error);
+      alert(error instanceof Error ? error.message : '챌린지 참여 중 오류가 발생했습니다.');
+    }
+  };
+
   if (loading) return <p>⏳ 로딩 중...</p>;
+  if (error) return <p>오류: {error}</p>;
 
   return (
     <>
@@ -246,12 +193,18 @@ const Challenge: React.FC = () => {
 
               <p className="reward">🎁 보상: {c.reward}</p>
 
-              <button 
-                className="join-btn"
-                onClick={() => handleJoinChallenge(c)}
-              >
-                참여하기
-              </button>
+              {c.is_joined ? (
+                <button className="join-btn" disabled>
+                  참여중
+                </button>
+              ) : (
+                <button 
+                  className="join-btn"
+                  onClick={() => handleJoinChallenge(c.id)}
+                >
+                  참여하기
+                </button>
+              )}
             </div>
           ))}
         </div>

@@ -2,7 +2,7 @@ from datetime import datetime
 import enum
 
 from sqlalchemy import (
-    Column, BigInteger, Enum, DateTime, Numeric, String, Integer, ForeignKey, DECIMAL
+    Column, BigInteger, Enum, DateTime, Numeric, String, Integer, ForeignKey
 )
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import relationship
@@ -167,6 +167,7 @@ class Challenge(Base):
     target_saved_g = Column(Integer, nullable=False)
     start_at = Column(DateTime, nullable=False)
     end_at = Column(DateTime, nullable=False)
+    reward = Column(String(255), nullable=True) # Add reward field
     created_by = Column(BigInteger, ForeignKey("users.user_id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -258,7 +259,7 @@ class GardenLevel(Base):
     description = Column(String(255))
     
     # Relationships
-    gardens = relationship("UserGarden", backref="level")
+    gardens = relationship("UserGarden", back_populates="level")
 
 class UserGarden(Base):
     __tablename__ = "user_gardens"
@@ -273,6 +274,7 @@ class UserGarden(Base):
     
     # Relationships
     watering_logs = relationship("GardenWateringLog", backref="garden")
+    level = relationship("GardenLevel", back_populates="gardens")
 
 class GardenWateringLog(Base):
     __tablename__ = "garden_watering_logs"

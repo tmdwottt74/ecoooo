@@ -12,7 +12,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<User | null>;
   logout: () => void;
   signup: (userData: any) => Promise<boolean>;
 }
@@ -50,30 +50,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<User | null> => {
     try {
-      // 실제 API 호출 대신 데모용 로직
-      // 실제 환경에서는 서버에 인증 요청을 보내야 함
-      
-      // 입력한 이메일과 비밀번호를 저장하는 사용자 데이터
-      const demoUser: User = {
-        id: '1',
-        name: '김에코',
-        email: email,
-        password: password, // 입력한 비밀번호 저장
-        role: '사용자'
+      const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: email, password: password }), // Backend expects username, frontend uses email
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Login failed:', errorData.detail || 'Unknown error');
+        return null;
+      }
+
+      const userData = await response.json();
+      // Backend returns user_id, username, role. Map to frontend User interface.
+      const loggedInUser: User = {
+        id: userData.user_id.toString(), // Ensure ID is string
+        name: userData.username,
+        email: email, // Use provided email for consistency
+        role: userData.role
       };
 
-      // 로컬 스토리지에 사용자 정보 저장
-      localStorage.setItem('eco-user', JSON.stringify(demoUser));
+      localStorage.setItem('eco-user', JSON.stringify(loggedInUser));
       
-      setUser(demoUser);
+      setUser(loggedInUser);
       setIsAuthenticated(true);
       
-      return true;
+      return loggedInUser;
     } catch (error) {
       console.error('Login failed:', error);
-      return false;
+      return null;
     }
   };
 

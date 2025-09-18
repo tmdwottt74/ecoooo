@@ -27,9 +27,13 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(formData.email, formData.password);
-      if (success) {
-        navigate('/');
+      const loggedInUser = await login(formData.email, formData.password);
+      if (loggedInUser) {
+        if (loggedInUser.role === 'ADMIN') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
       } else {
         alert('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
       }

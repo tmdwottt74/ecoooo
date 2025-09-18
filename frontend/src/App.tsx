@@ -22,6 +22,12 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Sidebar from "./components/Sidebar";
 import { ChatPreview, CreditPreview, GardenPreview } from "./components/PreviewComponents";
+import Achievements from './pages/Achievements'; // New
+import AdminPage from './pages/AdminPage'; // New
+import CreditPoints from './pages/CreditPoints'; // New
+import CreditRecent from './pages/CreditRecent'; // New
+import Register from './pages/Register'; // New
+import ServicePage from './ServicePage'; // New
 
 
 // 로고 컴포넌트
@@ -341,6 +347,12 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/gardenchat" element={<GardenWithChat />} />
+          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/admin" element={<AdminPage />} />
+          <Route path="/credit-points" element={<CreditPoints />} />
+          <Route path="/credit-recent" element={<CreditRecent />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/service" element={<ServicePage />} />
         </Routes>
       </main>
 

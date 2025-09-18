@@ -1,12 +1,12 @@
 # backend/routes/dashboard.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
+from sqlalchemy import text, func
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
 from ..database import get_db
 from ..models import User, CreditsLedger, MobilityLog, UserGarden, GardenLevel
-from ..schemas import DashboardStats, DailyStats, WeeklyStats
+from ..schemas import DashboardStats, DailySaving, ModeStat, ChallengeStat, DailyStats, WeeklyStats
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -30,59 +30,64 @@ async def get_dashboard(user_id: int, db: Session = Depends(get_db)) -> Dashboar
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 📌 오늘 절약량
-    today_query = text("""
-        SELECT IFNULL(SUM(co2_saved_g), 0) AS saved_today
-        FROM mobility_logs
-        WHERE user_id = :user_id AND DATE(created_at) = CURDATE()
-    """)
-    today_row = db.execute(today_query, {"user_id": user_id}).fetchone()
-    co2_saved_today = float(today_row[0]) if today_row else 0.0
+    # 📌 오늘 절약량 (g)
+    co2_saved_today = db.query(func.sum(MobilityLog.co2_saved_g)).filter(
+        MobilityLog.user_id == user_id,
+        func.date(MobilityLog.created_at) == datetime.utcnow().date()
+    ).scalar() or 0
 
-    # 📌 누적 절약량
-    total_query = text("""
-        SELECT IFNULL(SUM(co2_saved_g), 0) AS total_saved
-        FROM mobility_logs
-        WHERE user_id = :user_id
-    """)
-    total_row = db.execute(total_query, {"user_id": user_id}).fetchone()
-    total_saved = float(total_row[0]) if total_row else 0.0
-
-    # 📌 총 포인트
-    points_query = text("""
-        SELECT IFNULL(SUM(points), 0) AS total_points
-        FROM credits_ledger
-        WHERE user_id = :user_id
-    """)
-    points_row = db.execute(points_query, {"user_id": user_id}).fetchone()
-    total_points = int(points_row[0]) if points_row else 0
+    # 📌 오늘 획득 크레딧
+    eco_credits_earned = db.query(func.sum(CreditsLedger.points)).filter(
+        CreditsLedger.user_id == user_id,
+        CreditsLedger.type == 'EARN',
+        func.date(CreditsLedger.created_at) == datetime.utcnow().date()
+    ).scalar() or 0
 
     # 📌 정원 레벨 정보
     garden = db.query(UserGarden).filter(UserGarden.user_id == user_id).first()
     garden_level = 1
-    garden_progress = 0
-    
-    if garden:
+    if garden and garden.level:
         garden_level = garden.level.level_number
-        garden_progress = garden.waters_count
 
-    # 📌 최근 활동 수
-    recent_activities_query = text("""
-        SELECT COUNT(*) AS activity_count
-        FROM mobility_logs
-        WHERE user_id = :user_id 
-        AND created_at >= CURDATE() - INTERVAL 7 DAY
-    """)
-    activities_row = db.execute(recent_activities_query, {"user_id": user_id}).fetchone()
-    recent_activities = int(activities_row[0]) if activities_row else 0
+    # 📌 누적 절약량 (kg)
+    total_saved_g = db.query(func.sum(MobilityLog.co2_saved_g)).filter(MobilityLog.user_id == user_id).scalar() or 0
+    total_saved_kg = total_saved_g / 1000
+
+    # 📌 누적 크레딧
+    total_points = db.query(func.sum(CreditsLedger.points)).filter(CreditsLedger.user_id == user_id).scalar() or 0
+
+    # 📌 최근 7일 절감량
+    last7days_data = db.query(
+        func.date(MobilityLog.created_at),
+        func.sum(MobilityLog.co2_saved_g)
+    ).filter(
+        MobilityLog.user_id == user_id,
+        MobilityLog.created_at >= datetime.utcnow().date() - timedelta(days=7)
+    ).group_by(func.date(MobilityLog.created_at)).order_by(func.date(MobilityLog.created_at)).all()
+
+    last7days = [DailySaving(date=str(d), saved_g=s) for d, s in last7days_data]
+
+    # 📌 교통수단별 절감 비율
+    mode_stats_data = db.query(
+        MobilityLog.mode,
+        func.sum(MobilityLog.co2_saved_g)
+    ).filter(MobilityLog.user_id == user_id).group_by(MobilityLog.mode).all()
+
+    modeStats = [ModeStat(mode=m, saved_g=s) for m, s in mode_stats_data]
+
+    # 📌 챌린지 진행 상황
+    challenge = ChallengeStat(goal=CHALLENGE_GOAL_KG, progress=total_saved_kg)
 
     return DashboardStats(
         user_id=user_id,
-        total_points=total_points,
-        total_co2_saved=total_saved / 1000,  # g → kg 변환
-        recent_activities=recent_activities,
+        co2_saved_today=co2_saved_today,
+        eco_credits_earned=eco_credits_earned,
         garden_level=garden_level,
-        garden_progress=garden_progress
+        total_saved=total_saved_kg,
+        total_points=total_points,
+        last7days=last7days,
+        modeStats=modeStats,
+        challenge=challenge
     )
 
 @router.get("/{user_id}/daily", response_model=List[DailyStats])

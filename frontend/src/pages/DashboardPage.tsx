@@ -61,7 +61,7 @@ const DashboardPage: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8001";
+  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
   const userId = 1; // 실제 로그인 사용자 ID로 대체 필요
 
   // ✅ 데이터 불러오기
