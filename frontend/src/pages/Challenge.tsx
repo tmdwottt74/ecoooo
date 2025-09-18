@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useCredits } from "../contexts/CreditsContext";
 
 const styles = `
 .challenge-page {
@@ -103,6 +104,55 @@ interface ChallengeData {
 const Challenge: React.FC = () => {
   const [challenges, setChallenges] = useState<ChallengeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const { completeChallenge } = useCredits();
+
+  // localStorage에서 챌린지 상태 복원
+  const loadChallengesFromStorage = () => {
+    const stored = localStorage.getItem('challenge_progress');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch (error) {
+        console.error('Error parsing stored challenge data:', error);
+      }
+    }
+    return null;
+  };
+
+  // 챌린지 상태를 localStorage에 저장
+  const saveChallengesToStorage = (challengeData: ChallengeData[]) => {
+    localStorage.setItem('challenge_progress', JSON.stringify(challengeData));
+  };
+
+  // 챌린지 참여하기 핸들러
+  const handleJoinChallenge = async (challenge: ChallengeData) => {
+    try {
+      // 챌린지 완료 처리
+      await completeChallenge(
+        challenge.id.toString(),
+        'daily',
+        parseInt(challenge.reward.replace(/[^0-9]/g, '')), // 숫자만 추출
+        challenge.title
+      );
+      
+      // 로컬 상태 업데이트
+      const updatedChallenges = challenges.map(c => 
+        c.id === challenge.id 
+          ? { ...c, progress: Math.min(c.progress + 25, 100) }
+          : c
+      );
+      
+      setChallenges(updatedChallenges);
+      
+      // localStorage에 상태 저장
+      saveChallengesToStorage(updatedChallenges);
+      
+      alert(`${challenge.title} 챌린지에 참여했습니다!`);
+    } catch (error) {
+      console.error('챌린지 참여 실패:', error);
+      alert('챌린지 참여 중 오류가 발생했습니다.');
+    }
+  };
 
   // 더미 데이터
   const dummyChallenges: ChallengeData[] = [
@@ -139,6 +189,15 @@ const Challenge: React.FC = () => {
   useEffect(() => {
     const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
+    // 먼저 localStorage에서 저장된 상태 확인
+    const storedChallenges = loadChallengesFromStorage();
+    if (storedChallenges) {
+      setChallenges(storedChallenges);
+      setLoading(false);
+      return;
+    }
+
+    // localStorage에 데이터가 없으면 API에서 가져오기
     fetch(`${API_URL}/challenges/1`)
       .then((res) => {
         if (res.ok) return res.json();
@@ -146,10 +205,12 @@ const Challenge: React.FC = () => {
       })
       .then((data) => {
         setChallenges(data);
+        saveChallengesToStorage(data); // 초기 데이터도 저장
       })
       .catch(() => {
         // API 실패 시 더미 데이터 사용
         setChallenges(dummyChallenges);
+        saveChallengesToStorage(dummyChallenges); // 더미 데이터도 저장
       })
       .finally(() => {
         setLoading(false);
@@ -185,7 +246,12 @@ const Challenge: React.FC = () => {
 
               <p className="reward">🎁 보상: {c.reward}</p>
 
-              <button className="join-btn">참여하기</button>
+              <button 
+                className="join-btn"
+                onClick={() => handleJoinChallenge(c)}
+              >
+                참여하기
+              </button>
             </div>
           ))}
         </div>

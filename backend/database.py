@@ -6,7 +6,7 @@ import os
 # 데이터베이스 URL 설정
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "mysql+pymysql://root:password@localhost:3306/ecoooo_db"
+    "sqlite:///./ecooo.db"
 )
 
 # SQLAlchemy 엔진 생성

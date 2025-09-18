@@ -1,27 +1,17 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import PageHeader from "../components/PageHeader";
 
 const About: React.FC = () => {
   return (
     <div style={styles.page}>
-      {/* 히어로 섹션 */}
-      <section style={styles.heroSection}>
-        <div style={styles.heroContent}>
-          <h1 style={styles.heroTitle}>
-            🌱 오늘의 작은 발걸음, 내일의 숲을 키웁니다!
-          </h1>
-          <p style={styles.heroSubtitle}>
-            Ecoo와 함께 지속 가능한 미래를 만들어가세요
-          </p>
-        </div>
-        <div style={styles.heroDecoration}>
-          <div style={styles.floatingElement1}>🌿</div>
-          <div style={styles.floatingElement2}>🌱</div>
-          <div style={styles.floatingElement3}>🌳</div>
-        </div>
-      </section>
+      <PageHeader 
+        title="About Us" 
+        subtitle="Ecoo와 함께 지속 가능한 미래를 만들어가세요"
+        icon="ℹ️"
+      />
 
       <div style={styles.container}>
-        <h2 style={styles.title}>About Our Service</h2>
         <p style={styles.subtitle}>
           Ecoo 챗봇과 함께하는 탄소 절감 프로젝트는 <br />
           사용자의 교통, 생활 데이터를 기반으로 탄소 절감 효과를 알려주고, <br />
@@ -29,38 +19,46 @@ const About: React.FC = () => {
         </p>
 
         <div style={styles.cards}>
-          <div style={styles.card} className="card">
-            <div style={styles.cardIcon}>🌱</div>
-            <h3 style={styles.cardTitle}>탄소 절감 분석</h3>
-            <p style={styles.cardText}>
-              대중교통, 자전거, 도보 이용 데이터를 분석하여
-              <br /> 절감한 CO₂를 시각적으로 보여줍니다.
-            </p>
-          </div>
-          <div style={styles.card} className="card">
-            <div style={styles.cardIcon}>💰</div>
-            <h3 style={styles.cardTitle}>에코 크레딧</h3>
-            <p style={styles.cardText}>
-              절약한 탄소량을 포인트로 전환하고,
-              <br /> 다양한 보상 체계로 활용할 수 있습니다.
-            </p>
-          </div>
-          <div style={styles.card} className="card">
-            <div style={styles.cardIcon}>🤖</div>
-            <h3 style={styles.cardTitle}>AI 챗봇</h3>
-            <p style={styles.cardText}>
-              맞춤형 AI 챗봇이 사용자에게 실시간 피드백을 제공하고,
-              <br /> 지속 가능한 생활을 돕습니다.
-            </p>
-          </div>
-          <div style={styles.card} className="card">
-            <div style={styles.cardIcon}>🌿</div>
-            <h3 style={styles.cardTitle}>나만의 정원 꾸미기</h3>
-            <p style={styles.cardText}>
-              에코 크레딧으로 가상 정원을 키우고 꾸며보세요.
-              <br /> 물주기와 성장을 통해 지속적인 동기부여를 제공합니다.
-            </p>
-          </div>
+          <Link to="/dashboard" style={styles.cardLink}>
+            <div style={styles.card} className="card clickable-card">
+              <div style={styles.cardIcon}>🌱</div>
+              <h3 style={styles.cardTitle}>탄소 절감 분석</h3>
+              <p style={styles.cardText}>
+                대중교통, 자전거, 도보 이용 데이터를 분석하여
+                <br /> 절감한 CO₂를 시각적으로 보여줍니다.
+              </p>
+            </div>
+          </Link>
+          <Link to="/credit" style={styles.cardLink}>
+            <div style={styles.card} className="card clickable-card">
+              <div style={styles.cardIcon}>💰</div>
+              <h3 style={styles.cardTitle}>에코 크레딧</h3>
+              <p style={styles.cardText}>
+                절약한 탄소량을 포인트로 전환하고,
+                <br /> 다양한 보상 체계로 활용할 수 있습니다.
+              </p>
+            </div>
+          </Link>
+          <Link to="/chat" style={styles.cardLink}>
+            <div style={styles.card} className="card clickable-card">
+              <div style={styles.cardIcon}>🤖</div>
+              <h3 style={styles.cardTitle}>AI 챗봇</h3>
+              <p style={styles.cardText}>
+                맞춤형 AI 챗봇이 사용자에게 실시간 피드백을 제공하고,
+                <br /> 지속 가능한 생활을 돕습니다.
+              </p>
+            </div>
+          </Link>
+          <Link to="/mygarden" style={styles.cardLink}>
+            <div style={styles.card} className="card clickable-card">
+              <div style={styles.cardIcon}>🌿</div>
+              <h3 style={styles.cardTitle}>나만의 정원 꾸미기</h3>
+              <p style={styles.cardText}>
+                에코 크레딧으로 가상 정원을 키우고 꾸며보세요.
+                <br /> 물주기와 성장을 통해 지속적인 동기부여를 제공합니다.
+              </p>
+            </div>
+          </Link>
         </div>
 
         {/* 팀 소개 섹션 */}
@@ -171,15 +169,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     position: "relative",
     zIndex: 2,
   },
-  title: {
-    fontSize: "3rem",
-    fontWeight: 800,
-    background: "linear-gradient(135deg, #1abc9c, #16a085)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    marginBottom: "30px",
-    textShadow: "0 2px 4px rgba(0,0,0,0.1)",
-  },
   subtitle: {
     fontSize: "1.2rem",
     color: "#2c3e50",
@@ -196,6 +185,10 @@ const styles: { [key: string]: React.CSSProperties } = {
     gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
     gap: "40px",
     marginBottom: "100px",
+  },
+  cardLink: {
+    textDecoration: "none",
+    color: "inherit",
   },
   card: {
     background: "rgba(255, 255, 255, 0.95)",

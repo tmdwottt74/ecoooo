@@ -266,25 +266,28 @@ const Chat: React.FC = () => {
       )}
 
       <div className="input-area">
-        <div className="input-container">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-            placeholder="메시지를 입력하세요..."
-            className="message-input"
-          />
-          <button 
-            onClick={handleSendMessage} 
-            disabled={isLoading || !inputValue.trim()}
-            className="send-button"
-          >
-            <span>전송</span>
-            <div className="send-icon">📤</div>
-          </button>
-        </div>
-      </div>
+  <div className="input-container wide">
+    <input
+      type="text"
+      value={inputValue}
+      onChange={(e) => setInputValue(e.target.value)}
+      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+      placeholder="메시지를 입력하세요..."
+      className="message-input"
+    />
+    <button 
+      onClick={handleSendMessage} 
+      disabled={isLoading || !inputValue.trim()}
+      className="send-button"
+    >
+      <span>전송</span>
+      <div className="send-icon">📤</div>
+    </button>
+  </div>
+</div>
+
+
+
     </div>
   );
 };

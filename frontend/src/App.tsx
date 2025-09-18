@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
 import "./App.css";
 import DashboardPage from "./pages/DashboardPage";
 import NewsTicker from "./components/NewsTicker";
@@ -8,11 +8,20 @@ import Notice from "./pages/Notice";
 import Contact from "./pages/Contact";
 import Chat from "./pages/Chat";
 import Credit from "./pages/Credit";
-import CreditPoints from "./pages/CreditPoints";
-import CreditRecent from "./pages/CreditRecent";
 import ChallengeAchievements from "./pages/ChallengeAchievements";
 import MyGarden from "./pages/MyGarden";
 import { GardenProvider, GardenWithChat } from "./components/GardenChatIntegrations";
+import { CreditsProvider } from "./contexts/CreditsContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { UserProvider } from "./contexts/UserContext";
+import HowToService from "./components/HowToService";
+import HowTo from "./pages/HowTo";
+import HowToPopup from "./components/HowToPopup";
+import UserInfo from "./pages/UserInfo";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+import Sidebar from "./components/Sidebar";
+import { ChatPreview, CreditPreview, GardenPreview } from "./components/PreviewComponents";
 
 
 // 로고 컴포넌트
@@ -28,13 +37,45 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showHowToPopup, setShowHowToPopup] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const isPreview = new URLSearchParams(location.search).get("preview") === "1";
 
   // 페이지 이동 시 스크롤을 맨 위로 이동
   useEffect(() => {
+    // 즉시 스크롤 초기화
     window.scrollTo(0, 0);
-  }, [location.pathname]);
+    // 추가로 document 요소도 초기화
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    
+    // 모든 스크롤 가능한 요소도 초기화
+    const scrollableElements = document.querySelectorAll('[style*="overflow"], .scrollable, .content');
+    scrollableElements.forEach(element => {
+      if (element instanceof HTMLElement) {
+        element.scrollTop = 0;
+      }
+    });
+  }, [location.pathname, location.search]); // search 파라미터 변경 시에도 스크롤 초기화
+
+  // 홈 화면 접속 시 How to Use 팝업 표시
+  useEffect(() => {
+    if (location.pathname === "/" && !isPreview) {
+      const today = new Date().toDateString();
+      const dontShowToday = localStorage.getItem('howto-dont-show-today');
+      
+      if (dontShowToday !== today) {
+        // 1초 후 팝업 표시 (페이지 로딩 완료 후)
+        const timer = setTimeout(() => {
+          setShowHowToPopup(true);
+        }, 1000);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [location.pathname, isPreview]);
 
   // 서비스 검색 데이터 ✅ (App 함수 안에만 유지)
   const serviceItems = [
@@ -80,55 +121,68 @@ function AppContent() {
     { id: 4, text: "미래를 위한 지속 가능한 에너지, Ecoo와 함께 만들어가요." },
   ];
 
+  // 인증 페이지인지 확인
+  const isAuthPage = location.pathname === "/login" || location.pathname === "/signup";
+  
+  // 인증이 필요한 페이지인지 확인 (홈페이지는 제외)
+  const protectedPages = ["/dashboard", "/chat", "/mygarden", "/credit", "/challenge-achievements", "/user-info"];
+  const isProtectedPage = protectedPages.includes(location.pathname);
+  
+  // 인증되지 않은 사용자가 보호된 페이지에 접근하려 할 때 로그인 페이지로 리다이렉트
+  useEffect(() => {
+    if (!isAuthenticated && isProtectedPage && !isPreview) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, isProtectedPage, isPreview, navigate]);
+
+  // 처음 접속하거나 F5를 눌렀을 때 로그인되지 않은 상태면 로그인 페이지로 이동
+  useEffect(() => {
+    if (!isAuthenticated && !isAuthPage && !isPreview && location.pathname === '/') {
+      navigate('/login');
+    }
+  }, [isAuthenticated, isAuthPage, isPreview, location.pathname, navigate]);
+
   return (
     <div className="App">
-      {!isPreview && (
+      {!isPreview && !isAuthPage && <Sidebar />}
+      
+      {!isPreview && !isAuthPage && (
         <header className="main-header">
-          <div className="container">
-            <Logo />
-            <nav className="main-nav">
-              <div className="main-features">
-                <Link to="/dashboard" className="main-feature-btn dashboard-btn">
-                  <span className="feature-icon">📊</span>
-                  <span className="feature-text">Dashboard</span>
-                </Link>
-                <Link to="/chat" className="main-feature-btn chat-btn">
-                  <span className="feature-icon">🤖</span>
-                  <span className="feature-text">AI 챗봇</span>
-                </Link>
-                <Link to="/mygarden" className="main-feature-btn garden-btn">
-                  <span className="feature-icon">🌿</span>
-                  <span className="feature-text">나만의 정원</span>
-                </Link>
-              </div>
-              <ul className="secondary-nav">
-                <li>
-                  <Link to="/about">About Us</Link>
-                </li>
-                <li>
-                  <Link to="/challenge-achievements">챌린지 & 업적</Link>
-                </li>
-                <li>
-                  <Link to="/credit">Credit</Link>
-                </li>
-                <li>
-                  <Link to="/notice">Notice</Link>
-                </li>
-                <li>
-                  <Link to="/contact">Contact</Link>
-                </li>
-              </ul>
-            </nav>
+          <div className="header-content">
+            <div className="header-left">
+              <Link to="/user-info" className="user-info-link">
+                <div className="user-info">
+                  <span className="user-name">{user?.name || '김에코'}</span>
+                  <span className="user-role">{user?.role || '사용자'}</span>
+                </div>
+              </Link>
+            </div>
+            <div className="header-right">
+              <button 
+                className="logout-btn"
+                onClick={logout}
+                title="로그아웃"
+              >
+                <span className="logout-icon">🚪</span>
+                <span className="logout-text">로그아웃</span>
+              </button>
+            </div>
           </div>
         </header>
       )}
 
-      <main>
+      <main className={!isPreview && !isAuthPage ? "with-sidebar" : ""}>
         <Routes>
           <Route
             path="/"
             element={
               <>
+                {/* How to Use 팝업 */}
+                <HowToPopup 
+                  isOpen={showHowToPopup} 
+                  onClose={() => setShowHowToPopup(false)} 
+                />
+
                 <section id="hero" className="hero-section">
                   <div className="hero-content">
                     <h1 className="hero-title">
@@ -176,33 +230,27 @@ function AppContent() {
                     <div className="service-grid">
                       <div className="service-card">
                         <h3>🤖 AI 챗봇</h3>
-                        <iframe
-                          src="/chat?preview=1"
-                          className="preview-frame"
-                          title="AI Chatbot Preview"
-                        ></iframe>
+                        <div className="preview-frame">
+                          <ChatPreview />
+                        </div>
                         <Link to="/chat" className="detail-btn">
                           자세히
                         </Link>
                       </div>
                       <div className="service-card">
                         <h3>💰 크레딧 현황</h3>
-                        <iframe
-                          src="/credit?preview=1"
-                          className="preview-frame"
-                          title="Credit Preview"
-                        ></iframe>
+                        <div className="preview-frame">
+                          <CreditPreview />
+                        </div>
                         <Link to="/credit" className="detail-btn">
                           자세히
                         </Link>
                       </div>
                       <div className="service-card">
                         <h3>🌿 나만의 정원</h3>
-                        <iframe
-                          src="/mygarden?preview=1"
-                          className="preview-frame"
-                          title="My Garden Preview"
-                        ></iframe>
+                        <div className="preview-frame">
+                          <GardenPreview />
+                        </div>
                         <Link to="/mygarden" className="detail-btn">
                           자세히
                         </Link>
@@ -286,11 +334,13 @@ function AppContent() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/challenge-achievements" element={<ChallengeAchievements />} />
           <Route path="/credit" element={<Credit />} />
-          <Route path="/credit/points" element={<CreditPoints />} />
-          <Route path="/credit/recent" element={<CreditRecent />} />
           <Route path="/notice" element={<Notice />} />
+          <Route path="/user-info" element={<UserInfo />} />
           <Route path="/contact" element={<Contact />} />
-                    <Route path="/gardenchat" element={<GardenWithChat />} />
+          <Route path="/howto" element={<HowTo />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/gardenchat" element={<GardenWithChat />} />
         </Routes>
       </main>
 
@@ -311,9 +361,15 @@ function AppContent() {
 
 function App() {
   return (
-    <GardenProvider>
-      <AppContent />
-    </GardenProvider>
+    <AuthProvider>
+      <UserProvider>
+        <CreditsProvider>
+          <GardenProvider>
+            <AppContent />
+          </GardenProvider>
+        </CreditsProvider>
+      </UserProvider>
+    </AuthProvider>
   );
 }
 

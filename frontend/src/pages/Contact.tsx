@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import PageHeader from "../components/PageHeader";
 
 const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -25,34 +26,30 @@ const Contact: React.FC = () => {
 
   return (
     <div style={styles.page}>
-      {/* 히어로 섹션 */}
-      <section style={styles.heroSection}>
-        <div style={styles.heroContent}>
-          <h1 style={styles.heroTitle}>
-            🌱 함께 만들어가는 지속 가능한 미래
-          </h1>
-          <p style={styles.heroSubtitle}>
-            Ecoo와 함께 소통하고 협력해보세요
-          </p>
-        </div>
-        <div style={styles.heroDecoration}>
-          <div style={styles.floatingElement1}>💬</div>
-          <div style={styles.floatingElement2}>📧</div>
-          <div style={styles.floatingElement3}>🤝</div>
-        </div>
-      </section>
+      <PageHeader 
+        title="Contact" 
+        subtitle="Ecoo와 함께 소통하고 협력해보세요"
+        icon="📞"
+      />
 
       <div style={styles.container}>
-        <h2 style={styles.title}>Contact Us</h2>
-        <p style={styles.subtitle}>
-          Ecoo 챗봇과 함께하는 탄소 절감 프로젝트 팀입니다. <br />
-          우리는 AI와 데이터를 활용해 더 지속 가능한 도시 생활을 만들고자 합니다. <br />
-          문의나 협업 제안은 아래 이메일로 언제든 연락 주세요.
-        </p>
+        {/* About Our Team - 전체 너비 */}
+        <div style={styles.fullWidthSection}>
+          <div style={styles.card} className="card">
+            <div style={styles.cardIcon}>🌱</div>
+            <h3 style={styles.cardTitle}>About Our Team</h3>
+            <p style={styles.cardDescription}>
+              Ecoo 챗봇과 함께하는 탄소 절감 프로젝트 팀입니다. <br />
+              우리는 AI와 데이터를 활용해 더 지속 가능한 도시 생활을 만들고자 합니다. <br />
+              문의나 협업 제안은 아래 이메일로 언제든 연락 주세요.
+            </p>
+          </div>
+        </div>
 
-        <div style={styles.contentGrid} className="content-grid">
-          {/* 연락처 정보 카드 */}
-          <div style={styles.infoSection}>
+        {/* 나머지 요소들 - 2분할 그리드 */}
+        <div style={styles.twoColumnGrid} className="two-column-grid">
+          {/* 왼쪽 컬럼 */}
+          <div style={styles.column}>
             <div style={styles.card} className="card">
               <div style={styles.cardIcon}>📩</div>
               <h3 style={styles.cardTitle}>Email</h3>
@@ -83,7 +80,10 @@ const Contact: React.FC = () => {
                 서울시 AI 해커톤 8팀 충무로팀
               </p>
             </div>
+          </div>
 
+          {/* 오른쪽 컬럼 */}
+          <div style={styles.column}>
             <div style={styles.card} className="card">
               <div style={styles.cardIcon}>🚀</div>
               <h3 style={styles.cardTitle}>프로젝트 정보</h3>
@@ -102,10 +102,8 @@ const Contact: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* 문의 폼 */}
-          <div style={styles.formSection} className="form-section">
+            {/* 문의 폼 */}
             <div style={styles.formCard} className="form-card">
               <h3 style={styles.formTitle}>💬 문의하기</h3>
               <form onSubmit={handleSubmit} style={styles.form}>
@@ -252,34 +250,28 @@ const styles: { [key: string]: React.CSSProperties } = {
     position: "relative",
     zIndex: 2,
   },
-  title: {
-    fontSize: "3rem",
-    fontWeight: 800,
-    background: "linear-gradient(135deg, #1abc9c, #16a085)",
-    WebkitBackgroundClip: "text",
-    WebkitTextFillColor: "transparent",
-    marginBottom: "30px",
-    textShadow: "0 2px 4px rgba(0,0,0,0.1)",
-  },
-  subtitle: {
-    fontSize: "1.2rem",
-    color: "#2c3e50",
-    marginBottom: "80px",
-    lineHeight: "1.8",
-    maxWidth: "800px",
-    margin: "0 auto 80px",
-    fontWeight: 400,
+
+  // 전체 너비 섹션 (About Our Team)
+  fullWidthSection: {
+    marginBottom: "60px",
   },
 
-  // 콘텐츠 그리드
-  contentGrid: {
+  // 2분할 그리드
+  twoColumnGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: "60px",
+    gap: "40px",
     alignItems: "flex-start",
   },
 
-  // 정보 섹션
+  // 컬럼
+  column: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "30px",
+  },
+
+  // 정보 섹션 (기존 유지)
   infoSection: {
     display: "flex",
     flexDirection: "column",
@@ -303,21 +295,22 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: "block",
   },
   cardTitle: {
-    fontSize: "1.5rem",
+    fontSize: "1.8rem", /* 22-24px 이상 권장사항 적용 */
     fontWeight: 700,
     color: "#2c3e50",
     marginBottom: "20px",
   },
   email: {
-    fontSize: "1.2rem",
+    fontSize: "1.4rem", /* 18px 전후로 증가 */
     color: "#1abc9c",
     fontWeight: 600,
     marginBottom: "10px",
   },
   cardDescription: {
-    fontSize: "1rem",
+    fontSize: "1.2rem", /* 18px 전후로 증가 */
     color: "#6b7280",
     fontStyle: "italic",
+    lineHeight: 1.6, /* 줄 간격 증가 */
   },
 
   // 팀 멤버
@@ -334,18 +327,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: "1px solid rgba(26, 188, 156, 0.1)",
   },
   memberName: {
-    fontSize: "1.1rem",
+    fontSize: "1.3rem", /* 18px 전후로 증가 */
     fontWeight: 700,
     color: "#2c3e50",
     marginBottom: "5px",
   },
   memberRole: {
-    fontSize: "0.9rem",
+    fontSize: "1.1rem", /* 18px 전후로 증가 */
     color: "#1abc9c",
     fontWeight: 500,
   },
   teamDescription: {
-    fontSize: "1rem",
+    fontSize: "1.2rem", /* 18px 전후로 증가 */
     color: "#6b7280",
     fontWeight: 500,
     fontStyle: "italic",
@@ -365,12 +358,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderBottom: "1px solid rgba(26, 188, 156, 0.1)",
   },
   infoLabel: {
-    fontSize: "0.9rem",
+    fontSize: "1.1rem", /* 18px 전후로 증가 */
     color: "#6b7280",
     fontWeight: 500,
   },
   infoValue: {
-    fontSize: "0.9rem",
+    fontSize: "1.1rem", /* 18px 전후로 증가 */
     color: "#2c3e50",
     fontWeight: 600,
   },
@@ -391,7 +384,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     overflow: "hidden",
   },
   formTitle: {
-    fontSize: "1.8rem",
+    fontSize: "2.2rem", /* 22-24px 이상 권장사항 적용 */
     fontWeight: 700,
     color: "#2c3e50",
     marginBottom: "30px",
@@ -408,24 +401,24 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: "8px",
   },
   label: {
-    fontSize: "1rem",
+    fontSize: "1.2rem", /* 18px 전후로 증가 */
     fontWeight: 600,
     color: "#2c3e50",
   },
   input: {
-    padding: "15px 20px",
+    padding: "18px 24px", /* 패딩 증가 */
     border: "2px solid rgba(26, 188, 156, 0.2)",
     borderRadius: "15px",
-    fontSize: "1rem",
+    fontSize: "1.2rem", /* 18px 전후로 증가 */
     transition: "all 0.3s ease",
     background: "rgba(255, 255, 255, 0.8)",
     outline: "none",
   },
   textarea: {
-    padding: "15px 20px",
+    padding: "18px 24px", /* 패딩 증가 */
     border: "2px solid rgba(26, 188, 156, 0.2)",
     borderRadius: "15px",
-    fontSize: "1rem",
+    fontSize: "1.2rem", /* 18px 전후로 증가 */
     transition: "all 0.3s ease",
     background: "rgba(255, 255, 255, 0.8)",
     outline: "none",
@@ -435,10 +428,10 @@ const styles: { [key: string]: React.CSSProperties } = {
   submitButton: {
     background: "linear-gradient(135deg, #1abc9c, #16a085)",
     color: "white",
-    padding: "18px 30px",
+    padding: "20px 35px", /* 패딩 증가 */
     border: "none",
     borderRadius: "25px",
-    fontSize: "1.1rem",
+    fontSize: "1.3rem", /* 18px 전후로 증가 */
     fontWeight: 700,
     cursor: "pointer",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -495,13 +488,63 @@ styleSheet.textContent = `
   }
   
   @media (max-width: 768px) {
-    .content-grid {
+    .two-column-grid {
       grid-template-columns: 1fr;
-      gap: 40px;
+      gap: 30px;
     }
     
-    .form-section {
+    .form-card {
       position: static;
+    }
+    
+    .page-title {
+      font-size: 2.4rem; /* 모바일에서도 22-24px 이상 유지 */
+    }
+    
+    .page-subtitle {
+      font-size: 1.2rem; /* 모바일에서도 18px 전후 유지 */
+    }
+    
+    .card-title {
+      font-size: 1.6rem; /* 모바일에서도 18px 전후 유지 */
+    }
+    
+    .card-description {
+      font-size: 1.1rem; /* 모바일에서도 16px 이상 유지 */
+    }
+    
+    .form-title {
+      font-size: 2rem; /* 모바일에서도 20px 이상 유지 */
+    }
+    
+    .label {
+      font-size: 1.1rem; /* 모바일에서도 16px 이상 유지 */
+    }
+    
+    .input, .textarea {
+      font-size: 1.1rem; /* 모바일에서도 16px 이상 유지 */
+    }
+    
+    .submit-button {
+      font-size: 1.2rem; /* 모바일에서도 18px 전후 유지 */
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .page-title {
+      font-size: 2rem; /* 작은 화면에서도 20px 이상 유지 */
+    }
+    
+    .page-subtitle {
+      font-size: 1.1rem; /* 작은 화면에서도 16px 이상 유지 */
+    }
+    
+    .card-title {
+      font-size: 1.4rem; /* 작은 화면에서도 16px 이상 유지 */
+    }
+    
+    .form-title {
+      font-size: 1.8rem; /* 작은 화면에서도 18px 전후 유지 */
     }
   }
 `;

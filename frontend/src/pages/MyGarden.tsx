@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useCredits } from "../contexts/CreditsContext";
+import PageHeader from "../components/PageHeader";
 import "./MyGarden.css";
 
 // 🌿 레벨별 이미지 (public/0.png ~ public/10.png)
@@ -41,9 +43,10 @@ const getPlantStage = (level: number): string =>
   levelNames[Math.min(Math.max(level - 1, 0), levelNames.length - 1)];
 
 const MyGarden: React.FC = () => {
+  const { creditsData, addCredits, waterGarden } = useCredits();
   const [gardenData, setGardenData] = useState<GardenData>({
-    totalCarbonReduced: 18.5,
-    ecoPoints: 1240,
+    totalCarbonReduced: creditsData.totalCarbonReduced,
+    ecoPoints: creditsData.totalCredits,
   });
   const [loading, setLoading] = useState(true);
   const [isPreview, setIsPreview] = useState(false);
@@ -62,7 +65,7 @@ const MyGarden: React.FC = () => {
     const fetchGardenData = async () => {
       try {
         const response = await fetch(
-          "http://127.0.0.1:8000/garden/prototype_user"
+          "http://127.0.0.1:8001/garden/prototype_user"
         );
         const data = await response.json();
         setGardenData({
@@ -74,45 +77,66 @@ const MyGarden: React.FC = () => {
         setStage(initialStage);
       } catch (error) {
         console.error("Error fetching garden data:", error);
+        // 오류 시 CreditsContext 데이터 사용
+        setGardenData({
+          totalCarbonReduced: creditsData.totalCarbonReduced,
+          ecoPoints: creditsData.totalCredits,
+        });
+        const initialStage = getStageFromPoints(creditsData.totalCredits);
+        setStage(initialStage);
       } finally {
         setLoading(false);
       }
     };
 
     fetchGardenData();
-  }, []);
+  }, []); // 의존성 배열에서 creditsData 제거하여 무한 루프 방지
 
-  const handleWater = () => {
-    const hasEnough = gardenData.ecoPoints >= WATER_COST;
-    if (!hasEnough && !ALLOW_FREE_WATER_WHEN_NO_CREDIT) {
-      alert("크레딧이 부족합니다. 대중교통 이용 등으로 크레딧을 모아주세요.");
-      return;
-    }
+  // 크레딧 데이터가 변경될 때마다 gardenData 업데이트
+  useEffect(() => {
+    setGardenData(prev => ({
+      ...prev,
+      totalCarbonReduced: creditsData.totalCarbonReduced,
+      ecoPoints: creditsData.totalCredits,
+    }));
+    
+    // 크레딧 변경 시 단계도 업데이트
+    const newStage = getStageFromPoints(creditsData.totalCredits);
+    setStage(newStage);
+  }, [creditsData.totalCredits, creditsData.totalCarbonReduced]);
 
+  const handleWater = async () => {
     setAnimate(true);
     setTimeout(() => setAnimate(false), 500);
 
-    if (hasEnough) {
-      setGardenData((prev) => ({
-        ...prev,
-        ecoPoints: Math.max(0, prev.ecoPoints - WATER_COST),
-      }));
-    }
+    try {
+      // 새로운 waterGarden API 사용
+      const result = await waterGarden(WATER_COST);
+      
+      if (result.success) {
+        setStatusMessage(`물주기 완료! -${WATER_COST}C`);
+        
+        const newCount = waterCount + 1;
 
-    const newCount = waterCount + 1;
-
-    if (newCount >= WATERS_PER_STAGE) {
-      if (stage >= 10) {
-        setStatusMessage("최고 단계에 도달했습니다 🎉");
-        setWaterCount(WATERS_PER_STAGE);
+        if (newCount >= WATERS_PER_STAGE) {
+          if (stage >= 10) {
+            setStatusMessage("최고 단계에 도달했습니다 🎉");
+            setWaterCount(WATERS_PER_STAGE);
+          } else {
+            setStatusMessage("다음 단계로 넘어가요! 🌱");
+            setStage((s) => Math.min(s + 1, 10));
+            setWaterCount(0);
+          }
+        } else {
+          setWaterCount(newCount);
+          setStatusMessage(`물주기 완료! (${newCount}/${WATERS_PER_STAGE})`);
+        }
       } else {
-        setStatusMessage("다음 단계로 넘어가요!");
-        setStage((s) => Math.min(s + 1, 10));
-        setWaterCount(0);
+        setStatusMessage(result.message || "물주기에 실패했습니다.");
       }
-    } else {
-      setWaterCount(newCount);
-      setStatusMessage("");
+    } catch (error) {
+      console.error("물주기 실패:", error);
+      setStatusMessage("물주기에 실패했습니다.");
     }
   };
 
@@ -131,7 +155,7 @@ const MyGarden: React.FC = () => {
         <div className="preview-header">
           <h3>🌿 나만의 정원</h3>
           <div className="preview-stats">
-            <span className="stat-item">P {gardenData.ecoPoints}</span>
+            <span className="stat-item">C {gardenData.ecoPoints}</span>
             <span className="stat-item">Lv.{stage + 1}</span>
           </div>
         </div>
@@ -154,11 +178,16 @@ const MyGarden: React.FC = () => {
 
   return (
     <div className={`garden-card ${weatherClass}`}>
-      <h3>🌱 나만의 정원</h3>
+      <PageHeader 
+        title="나만의 정원" 
+        subtitle="크레딧으로 가상 정원을 꾸며보세요"
+        icon="🌿"
+      />
 
-      {/* 상단 요약 칩 */}
-      <div className="garden-chips">
-        <span className="chip chip-points">P {gardenData.ecoPoints}</span>
+      <div className="garden-content">
+        {/* 상단 요약 칩 */}
+        <div className="garden-chips">
+        <span className="chip chip-credits">C {gardenData.ecoPoints}</span>
         <span className="chip chip-stage">{plantStage}</span>
         <span className="chip chip-level">Lv.{stage + 1}</span>
       </div>
@@ -173,8 +202,7 @@ const MyGarden: React.FC = () => {
           />
         </div>
         <button onClick={handleWater} className="water-btn">
-          💧 물 주기 ({waterCount}/{WATERS_PER_STAGE}) —{" "}
-          {gardenData.ecoPoints >= WATER_COST ? `-${WATER_COST}P` : "무료(데모)"}
+          💧 물 주기 ({waterCount}/{WATERS_PER_STAGE}) — -{WATER_COST}C
         </button>
       </div>
 
@@ -187,8 +215,22 @@ const MyGarden: React.FC = () => {
         {statusMessage ||
           (stage >= 10 && waterCount >= WATERS_PER_STAGE
             ? "최고 단계에 도달했습니다 🎉"
-            : `레벨 진행도: ${waterCount}/${WATERS_PER_STAGE}`)}
+            : `물주기 완료! (${waterCount}/${WATERS_PER_STAGE})`)}
       </p>
+      
+      {/* 진행상황 바 */}
+      <div className="progress-container">
+        <div className="progress-bar">
+          <div 
+            className="progress-fill"
+            style={{ width: `${(waterCount / WATERS_PER_STAGE) * 100}%` }}
+          ></div>
+        </div>
+        <div className="progress-text">
+          {waterCount}/{WATERS_PER_STAGE} 단계 진행중
+        </div>
+      </div>
+      </div>
     </div>
   );
 };

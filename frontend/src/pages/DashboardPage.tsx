@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useCredits } from "../contexts/CreditsContext";
+import { Link } from "react-router-dom";
+import PageHeader from "../components/PageHeader";
 import "../App.css";
 import "./DashboardPage.css";
 
@@ -15,10 +18,10 @@ interface Challenge {
 
 interface DashboardData {
   co2_saved_today: number; // 오늘 절약량 (g)
-  eco_credits_earned: number; // 오늘 획득 포인트
+  eco_credits_earned: number; // 오늘 획득 크레딧
   garden_level: number; // 정원 레벨
   total_saved: number; // 누적 절약량 (kg)
-  total_points: number; // 누적 포인트
+  total_points: number; // 누적 크레딧
   last7days: DailySaving[];
   modeStats: { mode: string; saved_g: number }[];
   challenge: Challenge;
@@ -29,10 +32,10 @@ const COLORS = ["#1abc9c", "#16a085", "#f39c12", "#e74c3c"];
 // ✅ 통합된 더미 데이터
 const UNIFIED_DATA: DashboardData = {
   co2_saved_today: 1850,
-  eco_credits_earned: 185,
-  garden_level: 3,
+  eco_credits_earned: Math.floor(1850 / 10), // 10g당 1크레딧
+  garden_level: Math.floor(1850 / 100), // 100g당 레벨 1
   total_saved: 18.5,
-  total_points: 1240,
+  total_points: Math.floor(1850 / 10), // 10g당 1크레딧
   last7days: [
     { date: "01/09", saved_g: 1200 },
     { date: "01/10", saved_g: 1500 },
@@ -52,12 +55,13 @@ const UNIFIED_DATA: DashboardData = {
 };
 
 const DashboardPage: React.FC = () => {
+  const { creditsData, addCredits } = useCredits();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8001";
   const userId = 1; // 실제 로그인 사용자 ID로 대체 필요
 
   // ✅ 데이터 불러오기
@@ -90,28 +94,33 @@ const DashboardPage: React.FC = () => {
     fetchData();
   }, [API_URL, userId]);
 
-  // ✅ 활동 기록 버튼 (더미 데이터로 작동)
-  const handleLogActivity = async (activityType: "subway" | "bike") => {
-    try {
-      const points = activityType === "subway" ? 150 : 80;
-      const co2Saved = activityType === "subway" ? 1.5 : 0.8;
-
-      if (data) {
-        const updatedData = {
-          ...data,
-          co2_saved_today: data.co2_saved_today + co2Saved * 1000,
-          eco_credits_earned: data.eco_credits_earned + points,
-          total_saved: data.total_saved + co2Saved,
-          total_points: data.total_points + points,
-        };
-        setData(updatedData);
-
-        alert(`${activityType === "subway" ? "지하철" : "자전거"} 이용이 기록되었습니다! +${points}P`);
-      }
-    } catch (err) {
-      console.error("Error logging activity:", err);
-      setError("활동 기록에 실패했습니다.");
+  // 크레딧 데이터가 변경될 때마다 대시보드 데이터 업데이트
+  useEffect(() => {
+    if (data) {
+      setData(prev => prev ? {
+        ...prev,
+        total_points: creditsData.totalCredits,
+        total_saved: creditsData.totalCarbonReduced,
+        // 실시간으로 오늘 절약량도 업데이트
+        co2_saved_today: 1850, // 고정값으로 설정 (실제로는 오늘의 절감량이어야 함)
+        eco_credits_earned: creditsData.totalCredits,
+        // 최근 7일 데이터도 실시간으로 업데이트 (오늘 데이터만 업데이트)
+        last7days: prev.last7days.map((day, index) => {
+          if (index === prev.last7days.length - 1) {
+            return {
+              ...day,
+              saved_g: 1850 // 고정값으로 설정 (실제로는 오늘의 절감량이어야 함)
+            };
+          }
+          return day;
+        })
+      } : null);
     }
+  }, [creditsData, data]);
+
+  // ✅ 챗봇으로 이동하는 함수
+  const goToChat = () => {
+    window.location.href = '/chat';
   };
 
   // ✅ 상태 처리
@@ -140,38 +149,40 @@ const DashboardPage: React.FC = () => {
   }
 
   return (
-    <div className="dashboard-container" style={{ padding: "2rem" }}>
-      <h2 style={{ textAlign: "center", marginBottom: "3rem" }}>
-        📊 내 대시보드
-      </h2>
+    <div className="dashboard-container">
+      <PageHeader 
+        title="대시보드" 
+        subtitle="나의 친환경 활동 현황을 한눈에 확인하세요"
+        icon="📊"
+      />
       
       {/* 요약 카드 */}
       <div
         className="dashboard-grid"
         style={{ gridTemplateColumns: "repeat(4, 1fr)" }}
       >
-        <div className="card">
+        <Link to="/credit?tab=recent" className="card clickable-card">
           <h4>오늘 절약한 탄소</h4>
           <p className="metric">
             {data.co2_saved_today?.toFixed(2)} <span>g</span>
           </p>
-        </div>
-        <div className="card">
+        </Link>
+        <Link to="/credit?tab=points" className="card clickable-card">
           <h4>누적 절약량</h4>
           <p className="metric">
             {data.total_saved} <span>kg</span>
           </p>
-        </div>
-        <div className="card">
+        </Link>
+        <Link to="/credit" className="card clickable-card">
           <h4>에코 크레딧</h4>
           <p className="metric">
-            {data.total_points} <span>P</span>
+            {data.total_points} <span>C</span>
           </p>
-        </div>
-        <div className="card">
+        </Link>
+        <Link to="/mygarden" className="card clickable-card">
           <h4>정원 레벨</h4>
-          <p className="metric">Lv. {data.garden_level}</p>
-        </div>
+          <p className="metric">Lv. {data.garden_level} 🌱</p>
+        </Link>
       </div>
 
       {/* 📈 최근 7일 절감량 */}
@@ -204,7 +215,7 @@ const DashboardPage: React.FC = () => {
           {/* Y축 라벨 */}
           <div style={{
             position: "absolute",
-            left: "1.5rem",
+            left: "2rem",
             top: "2.5rem",
             height: "180px",
             display: "flex",
@@ -214,13 +225,33 @@ const DashboardPage: React.FC = () => {
           }}>
             {[2000, 1500, 1000, 500, 0].map((value) => (
               <span key={value} style={{ 
-                fontSize: "0.7rem", 
+                fontSize: "0.75rem", 
                 color: "#6b7280",
-                fontWeight: "500"
+                fontWeight: "600",
+                background: "rgba(255, 255, 255, 0.9)",
+                padding: "2px 6px",
+                borderRadius: "4px"
               }}>
                 {value}g
               </span>
             ))}
+          </div>
+
+          {/* Y축 제목 */}
+          <div style={{
+            position: "absolute",
+            left: "0.8rem",
+            top: "50%",
+            transform: "translateY(-50%) rotate(-90deg)",
+            fontSize: "0.85rem",
+            color: "#4a5568",
+            fontWeight: "700",
+            zIndex: 2,
+            background: "rgba(255, 255, 255, 0.9)",
+            padding: "4px 8px",
+            borderRadius: "4px"
+          }}>
+            탄소 절감량 (g)
           </div>
 
           {/* 차트 바 */}
@@ -230,7 +261,8 @@ const DashboardPage: React.FC = () => {
             alignItems: "end", 
             height: "180px", 
             marginBottom: "1.5rem",
-            paddingLeft: "3.5rem",
+            paddingLeft: "4rem",
+            paddingRight: "1rem",
             position: "relative",
             zIndex: 3
           }}>
@@ -258,10 +290,10 @@ const DashboardPage: React.FC = () => {
                   
                   {/* 차트 바 */}
                   <div style={{
-                    width: "24px",
+                    width: "28px",
                     height: `${height}px`,
                     background: "linear-gradient(to top, #1abc9c, #16a085)",
-                    borderRadius: "12px 12px 0 0",
+                    borderRadius: "14px 14px 0 0",
                     marginBottom: "8px",
                     minHeight: "8px",
                     position: "relative",
@@ -283,9 +315,13 @@ const DashboardPage: React.FC = () => {
                   }}></div>
                   
                   <span style={{ 
-                    fontSize: "0.8rem", 
-                    color: "#4b5563",
+                    fontSize: "0.7rem", 
+                    color: "#6b7280",
                     fontWeight: "600",
+                    textAlign: "center",
+                    background: "rgba(255, 255, 255, 0.9)",
+                    padding: "2px 4px",
+                    borderRadius: "3px",
                     marginBottom: "2px"
                   }}>
                     {day.date}
@@ -302,6 +338,17 @@ const DashboardPage: React.FC = () => {
             })}
           </div>
           
+          {/* X축 제목 */}
+          <div style={{
+            textAlign: "center",
+            paddingTop: "1rem",
+            fontSize: "0.9rem",
+            color: "#4a5568",
+            fontWeight: "700"
+          }}>
+            날짜
+          </div>
+
           {/* 차트 하단 정보 */}
           <div style={{
             display: "flex",
@@ -341,7 +388,41 @@ const DashboardPage: React.FC = () => {
       </div>
 
       {/* 🚋 교통수단 비율 */}
-      <h4 style={{ marginTop: "2rem", fontSize: "1.3rem", marginBottom: "1.5rem" }}>🚋 교통수단별 절감 비율</h4>
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "center",
+        marginTop: "2rem",
+        marginBottom: "1.5rem"
+      }}>
+        <h4 style={{ margin: 0, fontSize: "1.3rem" }}>🚋 교통수단별 절감 비율</h4>
+        <Link 
+          to="/credit?tab=recent" 
+          style={{ 
+            color: "#1abc9c", 
+            textDecoration: "none",
+            fontSize: "0.9rem",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "4px",
+            background: "rgba(26, 188, 156, 0.1)",
+            padding: "8px 12px",
+            borderRadius: "20px",
+            transition: "all 0.3s ease"
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = "rgba(26, 188, 156, 0.2)";
+            e.currentTarget.style.transform = "translateY(-1px)";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = "rgba(26, 188, 156, 0.1)";
+            e.currentTarget.style.transform = "translateY(0)";
+          }}
+        >
+          자세히 보기 →
+        </Link>
+      </div>
       <div style={{ 
         background: "linear-gradient(135deg, #ffffff 0%, #f8fffe 100%)", 
         padding: "2rem", 
@@ -416,63 +497,259 @@ const DashboardPage: React.FC = () => {
 
       {/* 🔥 챌린지 진행 상황 */}
       <div style={{ marginTop: "2rem" }}>
-        <h4>🔥 챌린지 진행 상황</h4>
-        <div
-          style={{
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "space-between", 
+          alignItems: "center",
+          marginBottom: "1rem"
+        }}>
+          <h4 style={{ margin: 0 }}>🔥 챌린지 진행 상황</h4>
+          <Link 
+            to="/challenge-achievements" 
+            style={{ 
+              color: "#1abc9c", 
+              textDecoration: "none",
+              fontSize: "0.9rem",
+              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px"
+            }}
+          >
+            자세히 보기 →
+          </Link>
+        </div>
+        
+        <div style={{
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fffe 100%)",
+          padding: "1.5rem",
+          borderRadius: "15px",
+          border: "1px solid rgba(26, 188, 156, 0.1)",
+          boxShadow: "0 4px 15px rgba(26, 188, 156, 0.1)",
+          marginBottom: "1rem"
+        }}>
+          <div style={{ marginBottom: "1rem" }}>
+            <h5 style={{ 
+              margin: "0 0 0.5rem 0", 
+              color: "#2c3e50",
+              fontSize: "1.1rem"
+            }}>
+              🚇 대중교통 이용 챌린지
+            </h5>
+            <p style={{ 
+              margin: 0, 
+              color: "#7f8c8d",
+              fontSize: "0.9rem"
+            }}>
+              {data.challenge.goal}kg 절감 목표 중 {data.challenge.progress}kg 달성!
+            </p>
+          </div>
+          
+          <div style={{
             background: "#ecf0f1",
             borderRadius: "10px",
             overflow: "hidden",
-            height: "20px",
-          }}
-        >
-          <div
-            style={{
-              width: `${
-                (data.challenge.progress / data.challenge.goal) * 100
-              }%`,
-              background: "#1abc9c",
-              height: "100%",
-              textAlign: "center",
-              color: "#fff",
-              fontSize: "0.8rem",
-            }}
-          >
-            {Math.round(
-              (data.challenge.progress / data.challenge.goal) * 100
-            )}
-            %
+            height: "25px",
+            position: "relative"
+          }}>
+            <div
+              style={{
+                width: `${Math.min((data.challenge.progress / data.challenge.goal) * 100, 100)}%`,
+                background: "linear-gradient(90deg, #1abc9c, #16a085)",
+                height: "100%",
+                textAlign: "center",
+                color: "#fff",
+                fontSize: "0.8rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: "600",
+                transition: "width 0.3s ease"
+              }}
+            >
+              {Math.round((data.challenge.progress / data.challenge.goal) * 100)}%
+            </div>
+          </div>
+          
+          <div style={{ 
+            marginTop: "0.8rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}>
+            <span style={{ 
+              fontSize: "0.8rem", 
+              color: "#1abc9c",
+              fontWeight: "600"
+            }}>
+              목표까지 {data.challenge.goal - data.challenge.progress}kg 남음
+            </span>
+            <span style={{ 
+              fontSize: "0.8rem", 
+              color: "#7f8c8d"
+            }}>
+              챌린지&업적 탭과 연동됨
+            </span>
           </div>
         </div>
-        <p
-          style={{
-            marginTop: "0.5rem",
-            fontSize: "0.9rem",
-            color: "#7f8c8d",
-          }}
-        >
-          그룹 챌린지: {data.challenge.goal}kg 절감 목표 중{" "}
-          {data.challenge.progress}kg 달성!
-        </p>
       </div>
 
-      {/* 🚀 활동 기록 버튼 */}
-      <div
-        className="activity-logger"
-        style={{ marginTop: "2rem", textAlign: "center" }}
-      >
-        <h4>활동 기록하기</h4>
-        <button
-          onClick={() => handleLogActivity("subway")}
-          style={{ margin: "0 10px", padding: "10px 16px" }}
-        >
-          지하철 타기 (+150P)
-        </button>
-        <button
-          onClick={() => handleLogActivity("bike")}
-          style={{ margin: "0 10px", padding: "10px 16px" }}
-        >
-          자전거 타기 (+80P)
-        </button>
+      {/* 🤖 AI 챗봇과 연결 */}
+      <div style={{ marginTop: "2rem" }}>
+        <h4 style={{ fontSize: "1.3rem", marginBottom: "1.5rem" }}>🤖 AI 챗봇과 활동 기록하기</h4>
+        <div style={{ 
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fffe 100%)", 
+          padding: "2rem", 
+          borderRadius: "20px",
+          border: "1px solid rgba(26, 188, 156, 0.1)",
+          boxShadow: "0 8px 25px rgba(26, 188, 156, 0.1)"
+        }}>
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "space-between",
+            marginBottom: "1.5rem"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{
+                width: "60px",
+                height: "60px",
+                background: "linear-gradient(135deg, #1abc9c, #16a085)",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "2rem",
+                boxShadow: "0 4px 15px rgba(26, 188, 156, 0.3)"
+              }}>
+                🤖
+              </div>
+              <div>
+                <h5 style={{ 
+                  margin: "0 0 0.5rem 0", 
+                  color: "#2c3e50",
+                  fontSize: "1.2rem"
+                }}>
+                  AI 챗봇과 친환경 활동하기
+                </h5>
+                <p style={{ 
+                  margin: 0, 
+                  color: "#7f8c8d",
+                  fontSize: "0.95rem"
+                }}>
+                  대화하며 활동을 기록하고 크레딧을 획득하세요!
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={goToChat}
+              style={{ 
+                background: "linear-gradient(135deg, #1abc9c, #16a085)",
+                color: "white",
+                border: "none",
+                padding: "12px 24px",
+                borderRadius: "20px",
+                fontSize: "1rem",
+                fontWeight: "600",
+                cursor: "pointer",
+                boxShadow: "0 4px 15px rgba(26, 188, 156, 0.3)",
+                transition: "all 0.3s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 20px rgba(26, 188, 156, 0.4)";
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 15px rgba(26, 188, 156, 0.3)";
+              }}
+            >
+              대화 시작하기 →
+            </button>
+          </div>
+          
+          <div style={{ 
+            display: "flex", 
+            gap: "1rem",
+            flexWrap: "wrap"
+          }}>
+            <div style={{
+              background: "rgba(26, 188, 156, 0.1)",
+              padding: "1rem",
+              borderRadius: "12px",
+              flex: "1",
+              minWidth: "200px",
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🚇</div>
+              <div style={{ 
+                fontSize: "0.9rem", 
+                fontWeight: "600",
+                color: "#2c3e50",
+                marginBottom: "0.3rem"
+              }}>
+                대중교통 이용
+              </div>
+              <div style={{ 
+                fontSize: "0.8rem", 
+                color: "#7f8c8d"
+              }}>
+                +150C 획득
+              </div>
+            </div>
+            <div style={{
+              background: "rgba(26, 188, 156, 0.1)",
+              padding: "1rem",
+              borderRadius: "12px",
+              flex: "1",
+              minWidth: "200px",
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🚴</div>
+              <div style={{ 
+                fontSize: "0.9rem", 
+                fontWeight: "600",
+                color: "#2c3e50",
+                marginBottom: "0.3rem"
+              }}>
+                자전거 이용
+              </div>
+              <div style={{ 
+                fontSize: "0.8rem", 
+                color: "#7f8c8d"
+              }}>
+                +100C 획득
+              </div>
+            </div>
+            <div style={{
+              background: "rgba(26, 188, 156, 0.1)",
+              padding: "1rem",
+              borderRadius: "12px",
+              flex: "1",
+              minWidth: "200px",
+              textAlign: "center"
+            }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🌱</div>
+              <div style={{ 
+                fontSize: "0.9rem", 
+                fontWeight: "600",
+                color: "#2c3e50",
+                marginBottom: "0.3rem"
+              }}>
+                에너지 절약
+              </div>
+              <div style={{ 
+                fontSize: "0.8rem", 
+                color: "#7f8c8d"
+              }}>
+                +50C 획득
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

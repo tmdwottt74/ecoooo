@@ -2,12 +2,12 @@ from datetime import datetime
 import enum
 
 from sqlalchemy import (
-    Column, BigInteger, Enum, DateTime, Numeric, String, Integer, ForeignKey
+    Column, BigInteger, Enum, DateTime, Numeric, String, Integer, ForeignKey, DECIMAL
 )
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import relationship
 
-from .base import Base  # Declarative Base
+from .database import Base  # Declarative Base
 
 
 # ---------------------------
@@ -234,7 +234,7 @@ class SubwayDistance(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     station_start = Column(String(255))
     station_end = Column(String(255))
-    distance_km = Column(Decimal(6, 2))
+    distance_km = Column(Numeric(6, 2))   # ✅ 수정됨
 
 # Bus Distances
 class BusDistance(Base):
@@ -244,7 +244,7 @@ class BusDistance(Base):
     route_id = Column(String(50))
     stop_start = Column(String(255))
     stop_end = Column(String(255))
-    distance_km = Column(Decimal(6, 2))
+    distance_km = Column(Numeric(6, 2))   # ✅ 수정됨
 
 # Garden System
 class GardenLevel(Base):

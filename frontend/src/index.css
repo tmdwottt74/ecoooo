@@ -20,8 +20,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--background-light);
   color: var(--dark-text);
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 18px; /* 40-50대 가독성을 위해 폰트 크기 증가 */
+  line-height: 1.8; /* 줄 간격 증가로 가독성 향상 */
+  font-weight: 400; /* 폰트 굵기 명시 */
 }
 
 /* Hero Section */
