@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
-  id: string;
+  id: string; // Keep for existing uses if any
+  user_id: number; // Add user_id as number
   name: string;
   email: string;
   password?: string; // 비밀번호 추가
@@ -77,7 +78,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('access_token', access_token);
       
       const loggedInUser: User = {
-        id: user_id.toString(), // Ensure ID is string
+        id: user_id.toString(), // Keep for existing uses if any
+        user_id: user_id, // Assign numeric user_id
         name: username,
         email: email, // Use provided email for consistency
         role: role

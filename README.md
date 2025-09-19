@@ -140,3 +140,16 @@ npm start
 ### 6. 기능 테스트 및 검토
 
 모든 기능(챌린지, 챗봇, 대시보드, 크레딧, 사용자 인증, 정원 등)이 예상대로 작동하는지 철저히 테스트하십시오. 특히 통합된 부분에서 문제가 없는지 확인하는 것이 중요합니다.
+
+백엔드 서버 실행
+py -3.11 -m venv .venv
+.\.venv\Scripts\activate
+cd backend
+pip install -r requirements.txt
+cd ..
+uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+
+프론트엔드 서버 실행
+cd frontend
+npm install
+npm start

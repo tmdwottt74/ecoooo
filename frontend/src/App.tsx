@@ -28,6 +28,7 @@ import CreditPoints from './pages/CreditPoints'; // New
 import CreditRecent from './pages/CreditRecent'; // New
 import Register from './pages/Register'; // New
 import ServicePage from './ServicePage'; // New
+import MobilityTrackingPage from './pages/MobilityTrackingPage'; // New Mobility Tracking Page
 
 
 // 로고 컴포넌트
@@ -353,6 +354,7 @@ function AppContent() {
           <Route path="/credit-recent" element={<CreditRecent />} />
           <Route path="/register" element={<Register />} />
           <Route path="/service" element={<ServicePage />} />
+          <Route path="/mobility-tracking" element={<MobilityTrackingPage />} /> {/* New Mobility Tracking Route */}
         </Routes>
       </main>
 

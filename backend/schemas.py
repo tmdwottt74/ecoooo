@@ -304,3 +304,18 @@ class AddPointsRequest(BaseModel):
     user_id: int
     points: int
     reason: str
+
+class MobilityLogResponse(BaseModel):
+    log_id: int
+    user_id: int
+    mode: TransportMode
+    distance_km: float
+    started_at: datetime
+    ended_at: datetime
+    co2_saved_g: float
+    eco_credits_earned: int # Renamed from points_earned for clarity with frontend
+    description: Optional[str] = None
+    start_point: Optional[str] = None
+    end_point: Optional[str] = None
+    class Config:
+        from_attributes = True

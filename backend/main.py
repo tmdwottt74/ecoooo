@@ -2,9 +2,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 from .database import init_db, SessionLocal
-from .routes import dashboard, credits, challenges, auth, achievements, users, admin
+from .routes import dashboard, credits, challenges, auth, achievements, users, admin, mobility # mobility 라우터 추가
 from .seed_admin_user import seed_admin_user
 from .bedrock_logic import router as chat_router
 
@@ -37,6 +41,7 @@ app.include_router(achievements.router)
 app.include_router(users.router)
 app.include_router(admin.router)
 app.include_router(chat_router)
+app.include_router(mobility.router) # mobility 라우터 추가
 
 @app.on_event("startup")
 async def startup_event():
