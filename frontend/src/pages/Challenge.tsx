@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext"; // Import useAuth
 
 const styles = `
 .challenge-page {
@@ -107,19 +108,25 @@ interface ChallengeData {
 }
 
 const Challenge: React.FC = () => {
+  const { user } = useAuth(); // Get user from AuthContext
   const [challenges, setChallenges] = useState<ChallengeData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // TODO: 실제 앱에서는 로그인 상태로부터 user_id를 가져와야 합니다.
-  const userId = 1;
+  // Use user.id if available, otherwise handle the case where user is null
+  const currentUserId = user?.id; 
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
   // 서버에서 챌린지 목록을 가져오는 함수
   const fetchChallenges = async () => {
+    if (!currentUserId) { // Don't fetch if user is not logged in
+      setLoading(false);
+      setError("로그인이 필요합니다.");
+      return;
+    }
     try {
       setLoading(true);
-      const response = await fetch(`${API_URL}/api/challenges/${userId}`);
+      const response = await fetch(`${API_URL}/api/challenges/${currentUserId}`); // Use currentUserId
       if (!response.ok) {
         throw new Error('챌린지 정보를 불러오는 데 실패했습니다.');
       }
@@ -137,17 +144,21 @@ const Challenge: React.FC = () => {
   useEffect(() => {
     fetchChallenges();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentUserId]); // Add currentUserId to dependency array
 
   // 챌린지 참여 처리 함수
   const handleJoinChallenge = async (challengeId: number) => {
+    if (!currentUserId) { // Don't join if user is not logged in
+      alert("로그인이 필요합니다.");
+      return;
+    }
     try {
       const response = await fetch(`${API_URL}/api/challenges/${challengeId}/join`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ user_id: currentUserId }), // Use currentUserId
       });
 
       if (!response.ok) {
@@ -167,6 +178,7 @@ const Challenge: React.FC = () => {
 
   if (loading) return <p>⏳ 로딩 중...</p>;
   if (error) return <p>오류: {error}</p>;
+  if (!currentUserId) return <p>로그인하여 챌린지에 참여하세요.</p>; // Display message if not logged in
 
   return (
     <>

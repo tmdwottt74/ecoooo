@@ -9,7 +9,7 @@ import './UserInfo.css';
 const UserInfo: React.FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { user, updateUser, fetchTransportAnalysis, isLoading } = useUser();
+  const { user, updateUser, isLoading } = useUser();
   const { creditsData } = useCredits();
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState(user);
@@ -24,9 +24,9 @@ const UserInfo: React.FC = () => {
   }, [user]);
 
   // 컴포넌트 마운트 시 교통수단 분석 데이터 가져오기
-  useEffect(() => {
-    fetchTransportAnalysis();
-  }, [fetchTransportAnalysis]);
+  // useEffect(() => {
+  //   fetchTransportAnalysis();
+  // }, [fetchTransportAnalysis]);
 
   const handleEdit = () => {
     setIsEditing(true);

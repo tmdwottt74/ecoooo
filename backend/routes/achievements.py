@@ -4,9 +4,10 @@ from typing import List
 
 from .. import crud, models, schemas
 from ..database import get_db
+from ..dependencies import get_current_user # Import get_current_user
 
 router = APIRouter(
-    prefix="/achievements",
+    prefix="/api/achievements", # Change prefix to include /api
     tags=["Achievements"],
 )
 
@@ -73,8 +74,9 @@ dummy_achievements_data = [
     }
 ]
 
-@router.get("/{user_id}")
-def get_user_achievements(user_id: int):
+@router.get("/", response_model=List[dict]) # Change path to "/" and add response_model
+def get_achievements(current_user: models.User = Depends(get_current_user)): # Get user from dependency
+    user_id = current_user.user_id # Get user_id from current_user
     # For now, return dummy data. In a real app, this would fetch from DB based on user_id
     print(f"Backend: Fetching achievements for user_id: {user_id}")
     return dummy_achievements_data

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useCredits } from "../contexts/CreditsContext";
 import { useUser } from "../contexts/UserContext"; // Import useUser
 import PageHeader from "../components/PageHeader";
+import { getAuthHeaders } from "../contexts/CreditsContext";
 import "./MyGarden.css";
 
 // 🌿 레벨별 이미지 (public/0.png ~ public/10.png)
@@ -51,7 +52,8 @@ const MyGarden: React.FC = () => {
     }
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/api/credits/garden/${user.id}` // Use dynamic user_id
+        `http://127.0.0.1:8000/api/credits/garden/${user.id}`, // Use dynamic user_id
+        { headers: getAuthHeaders() }
       );
       if (!response.ok) {
         throw new Error('Failed to fetch garden data');

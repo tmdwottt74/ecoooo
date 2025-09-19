@@ -62,7 +62,14 @@ const DashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
-  const userId = 1; // 실제 로그인 사용자 ID로 대체 필요
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('access_token');
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+  };
 
   // ✅ 데이터 불러오기
   useEffect(() => {
@@ -71,9 +78,9 @@ const DashboardPage: React.FC = () => {
       setError(null);
 
       try {
-        const response = await fetch(`${API_URL}/api/dashboard/${userId}`, {
+        const response = await fetch(`${API_URL}/api/dashboard`, {
           method: "GET",
-          headers: { "Content-Type": "application/json" },
+          headers: getAuthHeaders(),
         });
 
         if (response.ok) {
@@ -92,7 +99,7 @@ const DashboardPage: React.FC = () => {
     };
 
     fetchData();
-  }, [API_URL, userId]);
+  }, [API_URL]);
 
   // 크레딧 데이터가 변경될 때마다 대시보드 데이터 업데이트
   useEffect(() => {
@@ -116,7 +123,7 @@ const DashboardPage: React.FC = () => {
         })
       } : null);
     }
-  }, [creditsData, data]);
+  }, [creditsData]);
 
   // ✅ 챗봇으로 이동하는 함수
   const goToChat = () => {

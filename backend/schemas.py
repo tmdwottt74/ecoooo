@@ -235,6 +235,12 @@ class UserLogin(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    user_id: int
+    username: str
+    role: str
+
+class TokenData(BaseModel):
+    user_id: Optional[int] = None
 
 class UserGroup(BaseModel):
     group_id: int
@@ -295,6 +301,6 @@ class ErrorResponse(BaseModel):
     detail: Optional[str] = None
 
 class AddPointsRequest(BaseModel):
-    user_id: str
+    user_id: int
     points: int
     reason: str

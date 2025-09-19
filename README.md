@@ -46,9 +46,9 @@ Python 백엔드의 의존성을 격리하고 관리하기 위해 가상 환경�
 
 1.  **백엔드 폴더로 이동:**
     ```bash
-cd "C:\Users\coron\OneDrive\바탕 화면\2025.2-2\seoul25_AI_ht\gitHub\ecoooo_front_ver\ecoooo\backend"
+cd backend
     ```
-2.  **가상 환경 생성:**
+2.  **가상 환경 생성:** 
     ```bash
 python -m venv venv
     ```
@@ -76,7 +76,7 @@ pip install -r requirements.txt
 
 프론트엔드 폴더로 이동하여 의존성을 설치합니다.
 ```bash
-cd "C:\Users\coron\OneDrive\바탕 화면\2025.2-2\seoul25_AI_ht\gitHub\ecoooo_front_ver\ecoooo\frontend"
+cd frontend
 npm install
 # 또는
 # yarn install
@@ -93,7 +93,7 @@ npm install
   DB_PORT=3306
   DB_USER=admin
   DB_PASS=!donggukCAI1234
-  DB_NAME=ecoooo_db
+  DB_NAME=뭐엿지
 
   Google Custom Search API 설정 (챗봇 기능에 필요)
   GOOGLE_API_KEY="GOOGLE_API_KEY", "AIzaSyBgs37kJYWB7zsTfIrDTqe1hpOxBhNkH44"
@@ -116,16 +116,6 @@ REACT_APP_API_URL=http://127.0.0.1:8000
 ```
 (백엔드가 다른 주소에서 실행되는 경우 `REACT_APP_API_URL` 값을 조정하십시오.)
 
-### 4. 불필요한 파일 수동 삭제 (필수)
-
-병합 과정에서 자동으로 삭제되지 않은 다음 파일들을 수동으로 삭제해야 합니다. 이 파일들은 이전 데이터베이스 초기화 방식에 사용되었으며, 새로운 SQLAlchemy 기반 방식과 충돌을 일으킬 수 있습니다.
-
-**다음 파일들을 `C:\Users\coron\OneDrive\바탕 화면\2025.2-2\seoul25_AI_ht\gitHub\ecoooo_front_ver\ecoooo\backend`에서 삭제하십시오:**
-
-*   `init_db.py`
-*   `schema.sql`
-*   `seed.sql`
-
 ### 5. 프로젝트 실행
 
 #### 백엔드 실행
@@ -140,7 +130,7 @@ uvicorn backend.main:app --reload
 
 새로운 터미널을 열고 프론트엔드 폴더로 이동하여 다음 명령을 실행합니다.
 ```bash
-cd "C:\Users\coron\OneDrive\바탕 화면\2025.2-2\seoul25_AI_ht\gitHub\ecoooo_front_ver\ecoooo\frontend"
+cd frontend
 npm start
 # 또는
 # yarn start

@@ -5,6 +5,7 @@ from sqlalchemy import text
 from typing import List
 
 from .. import database, models, schemas
+from ..dependencies import get_current_user
 
 # /api/challenges 경로로 설정
 router = APIRouter(
@@ -14,32 +15,35 @@ router = APIRouter(
 
 # 챌린지 참여 요청을 위한 Pydantic 모델
 class ChallengeJoinRequest(schemas.BaseModel):
-    user_id: int
+    # user_id는 JWT에서 추출하므로 더 이상 요청 본문에 필요 없음
+    pass
 
 @router.post("/{challenge_id}/join")
 def join_challenge(
     challenge_id: int, 
     request: ChallengeJoinRequest, 
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
 ):
     """
     사용자를 챌린지에 참여시킵니다.
     이미 참여한 경우 오류를 반환합니다.
     """
+    user_id = current_user.user_id
     # 1. 챌린지 존재 여부 확인
     challenge = db.query(models.Challenge).filter(models.Challenge.challenge_id == challenge_id).first()
     if not challenge:
         raise HTTPException(status_code=404, detail="Challenge not found")
 
-    # 2. 사용자 존재 여부 확인
-    user = db.query(models.User).filter(models.User.user_id == request.user_id).first()
+    # 2. 사용자 존재 여부 확인 (current_user로 이미 확인됨)
+    user = db.query(models.User).filter(models.User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     # 3. 이미 참여했는지 확인 (핵심 버그 수정)
     existing_member = db.query(models.ChallengeMember).filter(
         models.ChallengeMember.challenge_id == challenge_id,
-        models.ChallengeMember.user_id == request.user_id
+        models.ChallengeMember.user_id == user_id
     ).first()
 
     if existing_member:
@@ -48,7 +52,7 @@ def join_challenge(
     # 4. 새 참여자로 등록
     new_member = models.ChallengeMember(
         challenge_id=challenge_id,
-        user_id=request.user_id
+        user_id=user_id
     )
     db.add(new_member)
     db.commit()
@@ -56,11 +60,12 @@ def join_challenge(
     return {"message": f"Successfully joined challenge '{challenge.title}'"}
 
 
-@router.get("/{user_id}", response_model=List[schemas.FrontendChallenge])
-def get_challenges(user_id: int, db: Session = Depends(database.get_db)):
+@router.get("/", response_model=List[schemas.FrontendChallenge])
+def get_challenges(current_user: models.User = Depends(get_current_user), db: Session = Depends(database.get_db)):
     """
     사용자의 챌린지 목록과 참여 상태를 반환합니다.
     """
+    user_id = current_user.user_id
     # 모든 챌린지 목록을 가져옴
     all_challenges = db.query(models.Challenge).order_by(models.Challenge.challenge_id).all()
     
@@ -90,8 +95,9 @@ def get_challenges(user_id: int, db: Session = Depends(database.get_db)):
     return result
 
 
-@router.get("/achievements/{user_id}")
-def get_achievements(user_id: int, db: Session = Depends(database.get_db)):
+@router.get("/achievements", response_model=List[dict])
+def get_achievements(current_user: models.User = Depends(get_current_user), db: Session = Depends(database.get_db)):
+    user_id = current_user.user_id
     query = text(
         """
         SELECT a.achievement_id, a.title, a.description, ua.granted_at

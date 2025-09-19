@@ -12,6 +12,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading: boolean; // 인터페이스에 isLoading 추가
   login: (email: string, password: string) => Promise<User | null>;
   logout: () => void;
   signup: (userData: any) => Promise<boolean>;
@@ -34,6 +35,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // isLoading 상태 추가
 
   // 컴포넌트 마운트 시 로컬 스토리지에서 사용자 정보 확인
   useEffect(() => {
@@ -48,9 +50,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('eco-user');
       }
     }
+    setIsLoading(false); // 초기 로딩 완료
   }, []);
 
   const login = async (email: string, password: string): Promise<User | null> => {
+    setIsLoading(true); // 로그인 시작 시 로딩 상태
     try {
       const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
       const response = await fetch(`${API_URL}/auth/login`, {
@@ -68,12 +72,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const userData = await response.json();
-      // Backend returns user_id, username, role. Map to frontend User interface.
+      const { access_token, token_type, user_id, username, role } = userData;
+
+      localStorage.setItem('access_token', access_token);
+      
       const loggedInUser: User = {
-        id: userData.user_id.toString(), // Ensure ID is string
-        name: userData.username,
+        id: user_id.toString(), // Ensure ID is string
+        name: username,
         email: email, // Use provided email for consistency
-        role: userData.role
+        role: role
       };
 
       localStorage.setItem('eco-user', JSON.stringify(loggedInUser));
@@ -85,40 +92,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Login failed:', error);
       return null;
+    } finally {
+      setIsLoading(false); // 로그인 완료 시 로딩 해제
     }
   };
 
   const signup = async (userData: any): Promise<boolean> => {
+    setIsLoading(true); // 회원가입 시작 시 로딩 상태
     try {
-      // 실제 API 호출 대신 데모용 로직
-      // 실제 환경에서는 서버에 회원가입 요청을 보내야 함
-      
-      // 회원가입 시 입력한 모든 정보를 저장하는 사용자 데이터
-      const newUser: User = {
-        id: Date.now().toString(),
-        name: userData.name,
-        email: userData.email,
-        password: userData.password, // 입력한 비밀번호 저장
-        phone: userData.phone, // 입력한 전화번호 저장
-        role: '사용자'
-      };
+      const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: userData.name,
+          email: userData.email,
+          password_hash: userData.password, // 실제 환경에서는 해싱 필요
+          role: userData.role || 'USER' // 기본값 'USER'
+        }),
+      });
 
-      // 로컬 스토리지에 사용자 정보 저장
-      localStorage.setItem('eco-user', JSON.stringify(newUser));
-      
-      setUser(newUser);
-      setIsAuthenticated(true);
-      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Signup failed:', errorData.detail || 'Unknown error');
+        return false;
+      }
+
+      const newUser = await response.json();
+      // 회원가입 성공 후 바로 로그인 처리 (선택 사항)
+      // 이 예시에서는 회원가입 후 로그인 페이지로 리다이렉트한다고 가정
       return true;
     } catch (error) {
       console.error('Signup failed:', error);
       return false;
+    } finally {
+      setIsLoading(false); // 회원가입 완료 시 로딩 해제
     }
   };
 
   const logout = () => {
-    // 로컬 스토리지에서 사용자 정보 제거
-    localStorage.removeItem('eco-user');
+    localStorage.clear(); // 모든 로컬 스토리지 데이터 제거
     
     setUser(null);
     setIsAuthenticated(false);
@@ -127,6 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     user,
     isAuthenticated,
+    isLoading, // 이제 정의된 isLoading 사용
     login,
     logout,
     signup

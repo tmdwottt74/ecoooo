@@ -184,6 +184,16 @@ def delete_challenge(db: Session, challenge_id: int):
 # ChallengeMember
 # =========================
 def join_challenge(db: Session, user_id: int, challenge_id: int):
+    # Check if the user has already joined this challenge
+    existing_member = db.query(models.ChallengeMember).filter(
+        models.ChallengeMember.user_id == user_id,
+        models.ChallengeMember.challenge_id == challenge_id
+    ).first()
+
+    if existing_member:
+        # User has already joined, return the existing membership
+        return existing_member
+    
     db_member = models.ChallengeMember(user_id=user_id, challenge_id=challenge_id)
     db.add(db_member)
     db.commit()

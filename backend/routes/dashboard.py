@@ -7,14 +7,15 @@ from datetime import datetime, timedelta
 from ..database import get_db
 from ..models import User, CreditsLedger, MobilityLog, UserGarden, GardenLevel
 from ..schemas import DashboardStats, DailySaving, ModeStat, ChallengeStat, DailyStats, WeeklyStats
+from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 # 📌 챌린지 목표 (예시: 100kg 절감)
 CHALLENGE_GOAL_KG = 100
 
-@router.get("/{user_id}", response_model=DashboardStats)
-async def get_dashboard(user_id: int, db: Session = Depends(get_db)) -> DashboardStats:
+@router.get("/", response_model=DashboardStats)
+async def get_dashboard(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> DashboardStats:
     """
     대시보드 통합 API
     - 오늘 절약량
@@ -25,6 +26,7 @@ async def get_dashboard(user_id: int, db: Session = Depends(get_db)) -> Dashboar
     - 교통수단별 절감 비율
     - 챌린지 진행 상황
     """
+    user_id = current_user.user_id
     # 사용자 존재 확인
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
@@ -91,8 +93,9 @@ async def get_dashboard(user_id: int, db: Session = Depends(get_db)) -> Dashboar
     )
 
 @router.get("/{user_id}/daily", response_model=List[DailyStats])
-async def get_daily_stats(user_id: int, days: int = 7, db: Session = Depends(get_db)) -> List[DailyStats]:
+async def get_daily_stats(days: int = 7, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> List[DailyStats]:
     """최근 N일간의 일별 통계를 조회합니다."""
+    user_id = current_user.user_id
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -123,8 +126,9 @@ async def get_daily_stats(user_id: int, days: int = 7, db: Session = Depends(get
     ]
 
 @router.get("/{user_id}/weekly", response_model=List[WeeklyStats])
-async def get_weekly_stats(user_id: int, weeks: int = 4, db: Session = Depends(get_db)) -> List[WeeklyStats]:
+async def get_weekly_stats(weeks: int = 4, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> List[WeeklyStats]:
     """최근 N주간의 주별 통계를 조회합니다."""
+    user_id = current_user.user_id
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -159,8 +163,9 @@ async def get_weekly_stats(user_id: int, weeks: int = 4, db: Session = Depends(g
     ]
 
 @router.get("/{user_id}/transport-modes")
-async def get_transport_mode_stats(user_id: int, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
+async def get_transport_mode_stats(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     """교통수단별 절감 통계를 조회합니다."""
+    user_id = current_user.user_id
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

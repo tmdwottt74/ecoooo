@@ -562,8 +562,8 @@ interface ChallengeData {
   reward: string;
   isParticipating: boolean;
   isCompleted: boolean;
-  startDate?: string;
-  endDate?: string;
+  startDate: string; // Backend sends start_at
+  endDate: string;   // Backend sends end_at
 }
 
 interface AchievementData {
@@ -586,6 +586,16 @@ const ChallengeAchievements: React.FC = () => {
   const [completedChallenge, setCompletedChallenge] = useState<ChallengeData | null>(null);
   const [newAchievement, setNewAchievement] = useState<AchievementData | null>(null);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
+
+  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('access_token');
+    return {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+  };
 
   // 더미 데이터
   const dummyChallenges: ChallengeData[] = [
@@ -699,21 +709,42 @@ const ChallengeAchievements: React.FC = () => {
 
   // 챌린지 참여하기 함수
   const handleJoinChallenge = async (challengeId: number) => {
-    setChallenges(prev => prev.map(challenge => {
-      if (challenge.id === challengeId) {
-        return {
-          ...challenge,
-          isParticipating: true,
-          startDate: new Date().toISOString().split('T')[0]
-        };
-      }
-      return challenge;
-    }));
+    // 백엔드 API 호출
+    const token = localStorage.getItem('access_token');
+    if (!token) { alert("로그인이 필요합니다."); return; }
 
-    // 참여 보너스 크레딧 지급
-    await addCredits(10, `챌린지 참여 보너스`);
-    
-    alert("챌린지에 참여했습니다! +10C 보너스가 지급되었습니다.");
+    try {
+      const response = await fetch(`${API_URL}/api/challenges/${challengeId}/join`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({}), // user_id는 백엔드에서 JWT로 추출
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || '챌린지 참여 실패');
+      }
+
+      // 성공 시 프론트엔드 상태 업데이트
+      setChallenges(prev => prev.map(challenge => {
+        if (challenge.id === challengeId) {
+          return {
+            ...challenge,
+            isParticipating: true,
+            startDate: new Date().toISOString().split('T')[0]
+          };
+        }
+        return challenge;
+      }));
+
+      // 참여 보너스 크레딧 지급
+      await addCredits(10, `챌린지 참여 보너스`);
+      
+      alert("챌린지에 참여했습니다! +10C 보너스가 지급되었습니다.");
+    } catch (error) {
+      console.error('챌린지 참여 오류:', error);
+      alert(`챌린지 참여 실패: ${(error as Error).message}`);
+    }
   };
 
   // 챌린지 완료 시 업적 생성 함수
@@ -855,23 +886,34 @@ const ChallengeAchievements: React.FC = () => {
   }, [addCredits]);
 
   useEffect(() => {
-    const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8001";
-
     // 챌린지 데이터 로드
-    fetch(`${API_URL}/challenges/1`)
+    fetch(`${API_URL}/api/challenges`, { headers: getAuthHeaders() })
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error("API 실패");
       })
       .then((data) => {
-        setChallenges(data);
+        // Map backend's is_joined to frontend's isParticipating
+        const mappedChallenges = data.map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          description: c.description,
+          progress: c.progress,
+          reward: c.reward,
+          isParticipating: c.is_joined, // Map is_joined to isParticipating
+          isCompleted: c.is_completed || false, // Assuming backend might send is_completed or default to false
+          startDate: c.start_at, // Assuming backend sends start_at
+          endDate: c.end_at // Assuming backend sends end_at
+        }));
+        setChallenges(mappedChallenges);
       })
-      .catch(() => {
+      .catch((error) => { // Catch the error object
+        console.error("챌린지 데이터 로드 실패:", error);
         setChallenges(dummyChallenges);
       });
 
     // 업적 데이터 로드
-    fetch(`${API_URL}/achievements/1`)
+    fetch(`${API_URL}/api/achievements`, { headers: getAuthHeaders() })
       .then((res) => {
         if (res.ok) return res.json();
         throw new Error("API 실패");

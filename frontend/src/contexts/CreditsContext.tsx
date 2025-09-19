@@ -26,6 +26,14 @@ const CreditsContext = createContext<CreditsContextType | undefined>(undefined);
 
 const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem('access_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
 export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useUser(); // Get user from UserContext
   const [creditsData, setCreditsData] = useState<CreditsData>({
@@ -52,23 +60,20 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
       const storedTotal = localStorage.getItem('credits_total');
       const storedUpdate = localStorage.getItem('credits_last_update');
       
-      // 실제 사용자 ID (로그인된 사용자 ID 사용)
-      const currentUserId = user.id;
-
       // 크레딧 잔액 가져오기
-      const creditsResponse = await fetch(`${API_URL}/api/credits/balance/${currentUserId}`);
+      const creditsResponse = await fetch(`${API_URL}/api/credits/balance`, { headers: getAuthHeaders() });
       if (!creditsResponse.ok) throw new Error('Failed to fetch credits');
       const creditsData = await creditsResponse.json();
 
       // 정원 상태 가져오기
-      const gardenResponse = await fetch(`${API_URL}/api/credits/garden/${currentUserId}`);
+      const gardenResponse = await fetch(`${API_URL}/api/credits/garden/${user.id}`, { headers: getAuthHeaders() });
       let gardenData = { total_carbon_reduced: 0 };
       if (gardenResponse.ok) {
         gardenData = await gardenResponse.json();
       }
 
       // 최근 모빌리티 활동 가져오기
-      const mobilityResponse = await fetch(`${API_URL}/api/credits/mobility/${currentUserId}?limit=1`);
+      const mobilityResponse = await fetch(`${API_URL}/api/credits/mobility/${user.id}?limit=1`, { headers: getAuthHeaders() });
       let recentEarned = 0;
       if (mobilityResponse.ok) {
         const mobilityData = await mobilityResponse.json();
@@ -123,13 +128,10 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/credits/update`, {
+      const response = await fetch(`${API_URL}/api/credits/update`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: user.id,
           total_points: newCredits,
         }),
       });
@@ -163,11 +165,9 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       const response = await fetch(`${API_URL}/api/credits/add`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: user.id, // 실제 사용자 ID
+          user_id: user.id,
           points: credits,
           reason: reason,
         }),
@@ -217,11 +217,9 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       const response = await fetch(`${API_URL}/api/credits/garden/water`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: user.id, // 실제 사용자 ID
+          user_id: user.id,
           points_spent: pointsSpent,
         }),
       });
@@ -251,7 +249,9 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
   const getCreditsHistory = async () => {
     if (!user || !user.id) return []; // User not logged in
     try {
-      const response = await fetch(`${API_URL}/api/credits/history/${user.id}?limit=50`);
+      const response = await fetch(`${API_URL}/api/credits/history/${user.id}?limit=50`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to fetch credits history');
       
       const history = await response.json();
@@ -277,11 +277,8 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const response = await fetch(`${API_URL}/api/credits/challenge/complete`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: user.id,
           challenge_id: challengeId,
           challenge_type: challengeType,
           points: points,
@@ -314,11 +311,8 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const response = await fetch(`${API_URL}/api/credits/activity/complete`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: user.id,
           activity_type: activityType,
           distance: distance,
           carbon_saved: carbonSaved,

@@ -402,8 +402,7 @@
   font-size: 0.9rem;
   color: #6b7280;
   font-weight: 500;
-}
-
+}
 .preview-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
