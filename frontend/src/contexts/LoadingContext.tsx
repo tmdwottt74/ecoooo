@@ -27,7 +27,7 @@ export const LoadingProvider: React.FC<LoadingProviderProps> = ({ children }) =>
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [loadingMessage, setLoadingMessage] = useState<string>('로딩 중...');
   const [loadingStartTime, setLoadingStartTime] = useState<number>(0);
-  const [minLoadingTime] = useState<number>(300); // 0.3초 (300ms)
+  const [minLoadingTime] = useState<number>(50); // 0.05초 (50ms)
 
   const showLoading = (message: string = '로딩 중...') => {
     setLoadingMessage(message);

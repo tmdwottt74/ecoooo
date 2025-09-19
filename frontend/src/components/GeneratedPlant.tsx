@@ -145,5 +145,3 @@ const GeneratedPlant: React.FC<GeneratedPlantProps> = ({ stage, decorate = 0, an
 export default GeneratedPlant;
 
 
-
-

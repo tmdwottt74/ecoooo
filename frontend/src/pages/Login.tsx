@@ -27,9 +27,13 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      const success = await login(formData.email, formData.password);
-      if (success) {
-        navigate('/home');
+      const loggedInUser = await login(formData.email, formData.password);
+      if (loggedInUser) {
+        if (loggedInUser.role === 'ADMIN') {
+          navigate('/admin');
+        } else {
+          navigate('/home');
+        }
       } else {
         alert('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
       }
@@ -73,10 +77,8 @@ const Login: React.FC = () => {
       
       <div className="auth-card">
         <div className="auth-header">
-          <Link to="/home" className="auth-logo">
-            <div className="logo-container">
-              <img src="/eco1-w.png" alt="ECO LIFE" className="logo-image" />
-            </div>
+          <Link to="/" className="auth-logo">
+            <h1>ECO 🌱 LIFE</h1>
           </Link>
           <h2>로그인</h2>
           <p>환경 친화적인 생활을 시작해보세요</p>
@@ -152,7 +154,7 @@ const Login: React.FC = () => {
               onClick={() => handleSocialLogin('google')}
               disabled={isLoading}
             >
-              <span className="social-icon google-icon">G</span>
+              <span className="social-icon">🔍</span>
               Google로 로그인
             </button>
             <button 
@@ -161,8 +163,8 @@ const Login: React.FC = () => {
               onClick={() => handleSocialLogin('kakao')}
               disabled={isLoading}
             >
-              <span className="social-icon kakao-icon">K</span>
-              카카오로 로그인
+              <span className="social-icon">💬</span>
+              Kakao로 로그인
             </button>
           </div>
 

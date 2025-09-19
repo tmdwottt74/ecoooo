@@ -5,60 +5,6 @@
   font-family: "Pretendard", sans-serif;
 }
 
-/* ==============================
-   실시간 크레딧 애니메이션
-   ============================== */
-.credit-display-container {
-  position: relative;
-  display: inline-block;
-}
-
-.credit-updated {
-  animation: creditPulse 0.6s ease-in-out;
-}
-
-.credit-change-animation {
-  position: absolute;
-  top: -30px;
-  right: -10px;
-  font-size: 1.2rem;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 8px;
-  animation: creditFloat 3s ease-out forwards;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.credit-change-animation.earn {
-  color: #27ae60;
-  background: rgba(39, 174, 96, 0.1);
-  border: 1px solid rgba(39, 174, 96, 0.3);
-}
-
-.credit-change-animation.spend {
-  color: #e74c3c;
-  background: rgba(231, 76, 60, 0.1);
-  border: 1px solid rgba(231, 76, 60, 0.3);
-}
-
-@keyframes creditPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-  100% { transform: scale(1); }
-}
-
-@keyframes creditFloat {
-  0% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-50px);
-  }
-}
-
 /* 클릭 가능한 카드 스타일 */
 .clickable-card {
   cursor: pointer;

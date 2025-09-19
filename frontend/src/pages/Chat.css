@@ -556,3 +556,156 @@
 .chat-container .message.user .message-bubble {
   box-shadow: 0 2px 8px rgba(26, 188, 156, 0.2);
 }
+
+/* ==============================
+   감정 선택 및 개인화 기능
+   ============================== */
+.mood-selector {
+  position: relative;
+  margin: 1rem 0;
+}
+
+.mood-btn {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.2rem;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(26, 188, 156, 0.3);
+}
+
+.mood-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(26, 188, 156, 0.4);
+}
+
+.mood-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  z-index: 1000;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.mood-options button {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.mood-options button:hover {
+  background: #1abc9c;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.realtime-tips {
+  background: linear-gradient(135deg, #e8f5f3, #f0f8f7);
+  border-radius: 15px;
+  padding: 1.2rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(26, 188, 156, 0.2);
+}
+
+.realtime-tips h5 {
+  margin: 0 0 0.8rem 0;
+  color: #1abc9c;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.tip-content p {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+/* ==============================
+   목표 달성 전략 섹션
+   ============================== */
+.goal-strategy-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #ffffff, #f8fffe);
+  border-radius: 20px;
+  border: 1px solid rgba(26, 188, 156, 0.1);
+  box-shadow: 0 4px 15px rgba(26, 188, 156, 0.1);
+}
+
+.goal-strategy-section h4 {
+  margin: 0 0 1.5rem 0;
+  color: #2c3e50;
+  font-size: 1.2rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.strategy-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.strategy-card {
+  background: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  border: 1px solid rgba(26, 188, 156, 0.2);
+  box-shadow: 0 4px 15px rgba(26, 188, 156, 0.1);
+  transition: all 0.3s ease;
+}
+
+.strategy-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(26, 188, 156, 0.2);
+}
+
+.strategy-card h5 {
+  margin: 0 0 0.8rem 0;
+  color: #1abc9c;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.strategy-card p {
+  margin: 0 0 1rem 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.strategy-btn {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  box-shadow: 0 4px 15px rgba(26, 188, 156, 0.3);
+}
+
+.strategy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(26, 188, 156, 0.4);
+}

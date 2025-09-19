@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import "./Credit.css";
-import { useLoading } from "../contexts/LoadingContext";
 
 type RecentMobility = { mode: string; distance_km: number; used_at?: string; co2_saved?: number };
 
 const CreditRecent: React.FC = () => {
-  const { showLoading, hideLoading } = useLoading();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<RecentMobility[]>([]);
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
@@ -26,7 +24,6 @@ const CreditRecent: React.FC = () => {
 
   useEffect(() => {
     const run = async () => {
-      showLoading("이동 기록을 불러오는 중...");
       try {
         const res = await fetch(`${API_URL}/mobility/recent/prototype_user`);
         if (res.ok) {
@@ -45,11 +42,10 @@ const CreditRecent: React.FC = () => {
         setItems(dummyData);
       } finally {
         setLoading(false);
-        hideLoading();
       }
     };
     run();
-  }, [API_URL, showLoading, hideLoading]);
+  }, [API_URL]);
 
   const getTransportIcon = (mode: string) => {
     switch (mode) {
@@ -65,7 +61,14 @@ const CreditRecent: React.FC = () => {
   const totalCo2Saved = items.reduce((sum, item) => sum + (item.co2_saved || 0), 0);
 
   if (loading) {
-    return null;
+    return (
+      <div className="credit-container">
+        <div className="loading-spinner">
+          <div className="spinner"></div>
+          <p>이동 기록을 불러오는 중...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -48,14 +48,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
   // 크레딧 데이터 가져오기
   const fetchCreditsData = async () => {
     if (!user || !user.id) { // Ensure user and user_id exist
-      console.warn("User not logged in or user_id not available. Using demo data.");
-      // 데모 데이터 사용
-      setCreditsData({
-        totalCredits: 1240,
-        totalCarbonReduced: 12.4,
-        recentEarned: 0,
-        lastUpdated: new Date().toISOString(),
-      });
+      console.warn("User not logged in or user_id not available. Skipping credits data fetch.");
       setIsLoading(false);
       return;
     }
@@ -69,10 +62,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
       
       // 크레딧 잔액 가져오기
       const creditsResponse = await fetch(`${API_URL}/api/credits/balance`, { headers: getAuthHeaders() });
-      if (!creditsResponse.ok) {
-        console.warn('Failed to fetch credits from API, using demo data');
-        throw new Error('Failed to fetch credits');
-      }
+      if (!creditsResponse.ok) throw new Error('Failed to fetch credits');
       const creditsData = await creditsResponse.json();
 
       // 정원 상태 가져오기
@@ -121,13 +111,11 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
     } catch (err) {
       console.error('Error fetching credits data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
-      // API 실패 시 데모 데이터 사용
-      setCreditsData({
-        totalCredits: 1240,
-        totalCarbonReduced: 12.4,
-        recentEarned: 0,
+      // 오류 시 기본값 사용
+      setCreditsData(prev => ({
+        ...prev,
         lastUpdated: new Date().toISOString(),
-      });
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -404,7 +392,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
   // 컴포넌트 마운트 시 데이터 가져오기
   useEffect(() => {
     fetchCreditsData();
-  }, [user?.id, fetchCreditsData]); // user.id가 변경될 때마다 데이터 다시 가져오기
+  }, [user?.id]); // user.id가 변경될 때마다 데이터 다시 가져오기
 
   // localStorage 변경 감지 (다른 탭에서의 크레딧 변경)
   useEffect(() => {
@@ -423,7 +411,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, [user?.id, fetchCreditsData]); // user.id가 변경될 때마다 리스너 재등록
+  }, [user?.id]); // user.id가 변경될 때마다 리스너 재등록
 
   // 주기적으로 데이터 새로고침 (5분마다로 변경하여 초기화 문제 방지)
   useEffect(() => {
@@ -447,7 +435,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
     }, 5 * 60 * 1000); // 5분
 
     return () => clearInterval(interval);
-  }, [user?.id, fetchCreditsData]); // user.id가 변경될 때마다 인터벌 재등록
+  }, [user?.id]); // user.id가 변경될 때마다 인터벌 재등록
 
   const value: CreditsContextType = {
     creditsData,

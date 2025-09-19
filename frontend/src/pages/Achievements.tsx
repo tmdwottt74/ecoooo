@@ -1,214 +1,264 @@
 import React, { useState, useEffect } from "react";
-import PageHeader from "../components/PageHeader";
-import "./Achievements.css";
 
-interface Achievement {
+const styles = `
+.achievements-container {
+  background-color: #fdfdf5;
+  min-height: 100vh;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.achievements-container h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #2e7d32;
+}
+
+.badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.badge-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  padding: 20px;
+  font-size: 1rem;
+  color: #333;
+  position: relative;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.badge-card:hover {
+  transform: translateY(-5px);
+}
+
+.badge-card.locked {
+  opacity: 0.5;
+}
+
+.badge-card h3 {
+  color:#1ABC9C;
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  background: #e0e0e0;
+  border-radius: 8px;
+  height: 10px;
+  margin: 1rem 0;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #66bb6a, #43a047);
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.date {
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: #fff;
+  padding: 20px 30px;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.modal h3 {
+  color: #1ABC9C;
+  margin-bottom: 10px;
+}
+
+.modal button {
+  margin-top: 15px;
+  padding: 8px 14px;
+  border: none;
+  background: #2e7d32;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+}
+`;
+
+interface AchievementData {
   id: number;
-  title: string;
-  description: string;
-  icon: string;
-  isUnlocked: boolean;
-  unlockedAt?: string;
+  name: string;
+  desc: string;
   progress: number;
-  maxProgress: number;
-  reward: string;
+  unlocked: boolean;
+  date?: string;
 }
 
 const Achievements: React.FC = () => {
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<null | number>(null);
+  const [achievements, setAchievements] = useState<AchievementData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // 더미 데이터
-    const dummyAchievements: Achievement[] = [
-      {
-        id: 1,
-        title: "첫 걸음",
-        description: "첫 번째 친환경 활동을 완료하세요",
-        icon: "🌱",
-        isUnlocked: true,
-        unlockedAt: "2025-01-15",
-        progress: 1,
-        maxProgress: 1,
-        reward: "10 크레딧",
-      },
-      {
-        id: 2,
-        title: "대중교통 마스터",
-        description: "대중교통을 10번 이용하세요",
-        icon: "🚇",
-        isUnlocked: true,
-        unlockedAt: "2025-01-16",
-        progress: 10,
-        maxProgress: 10,
-        reward: "50 크레딧",
-      },
-      {
-        id: 3,
-        title: "자전거 라이더",
-        description: "자전거를 5번 이용하세요",
-        icon: "🚲",
-        isUnlocked: false,
-        progress: 3,
-        maxProgress: 5,
-        reward: "30 크레딧",
-      },
-      {
-        id: 4,
-        title: "탄소 절약왕",
-        description: "총 100kg의 탄소를 절약하세요",
-        icon: "🌍",
-        isUnlocked: false,
-        progress: 45,
-        maxProgress: 100,
-        reward: "200 크레딧",
-      },
-    ];
-    setAchievements(dummyAchievements);
-  }, []);
-
-  const categories = [
-    { id: "all", name: "전체", icon: "🏆" },
-    { id: "transport", name: "교통", icon: "🚇" },
-    { id: "garden", name: "정원", icon: "🌱" },
-    { id: "challenge", name: "챌린지", icon: "🎯" },
-    { id: "carbon", name: "탄소절약", icon: "🌍" },
+  // 더미 데이터
+  const dummyAchievements: AchievementData[] = [
+    {
+      id: 1,
+      name: "첫 친환경 이동",
+      desc: "첫 번째 친환경 교통수단 이용",
+      progress: 100,
+      unlocked: true,
+      date: "2025-01-10"
+    },
+    {
+      id: 2,
+      name: "탄소 절약 마스터",
+      desc: "총 10kg CO₂ 절약 달성",
+      progress: 100,
+      unlocked: true,
+      date: "2025-01-12"
+    },
+    {
+      id: 3,
+      name: "지하철 애호가",
+      desc: "지하철 20회 이용",
+      progress: 80,
+      unlocked: false
+    },
+    {
+      id: 4,
+      name: "자전거 라이더",
+      desc: "자전거 50km 주행",
+      progress: 60,
+      unlocked: false
+    },
+    {
+      id: 5,
+      name: "도보의 달인",
+      desc: "도보 100km 이동",
+      progress: 30,
+      unlocked: false
+    },
+    {
+      id: 6,
+      name: "연속 출석왕",
+      desc: "30일 연속 친환경 이동",
+      progress: 25,
+      unlocked: false
+    },
+    {
+      id: 7,
+      name: "에코 크레딧 수집가",
+      desc: "1000P 이상 적립",
+      progress: 100,
+      unlocked: true,
+      date: "2025-01-14"
+    },
+    {
+      id: 8,
+      name: "환경 보호자",
+      desc: "총 50kg CO₂ 절약 달성",
+      progress: 37,
+      unlocked: false
+    }
   ];
 
-  const filteredAchievements = achievements.filter(() => {
-    if (selectedCategory === "all") return true;
-    return true; // 카테고리별 로직은 추후 추가
-  });
+  useEffect(() => {
+    const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
-  const unlockedCount = achievements.filter((a) => a.isUnlocked).length;
-  const totalCount = achievements.length;
+    fetch(`${API_URL}/achievements/1`)
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error("API 실패");
+      })
+      .then((data) => {
+        setAchievements(data);
+      })
+      .catch(() => {
+        // API 실패 시 더미 데이터 사용
+        setAchievements(dummyAchievements);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
-  const selectedAchievement = achievements.find((a) => a.id === selectedId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const currentBadge = achievements.find((b) => b.id === selected);
+
+  if (loading) return <p>⏳ 업적 불러오는 중...</p>;
 
   return (
-    <div className="achievements-page">
-      <PageHeader
-        title="업적"
-        subtitle="친환경 활동을 통해 다양한 업적을 달성해보세요!"
-        icon="🏆"
-      />
-
+    <>
+      <style>{styles}</style>
       <div className="achievements-container">
-        {/* 진행률 요약 */}
-        <div className="achievements-summary">
-          <div className="summary-card">
-            <div className="summary-icon">🏆</div>
-            <div className="summary-content">
-              <h3>업적 진행률</h3>
-              <p>
-                {unlockedCount} / {totalCount} 완료
-              </p>
+        <h2>🏆 나의 업적</h2>
+        <div className="badge-grid">
+          {achievements.map((b) => (
+            <div
+              key={b.id}
+              className={`badge-card ${!b.unlocked ? "locked" : ""}`}
+              onClick={() => setSelected(b.id)}
+            >
+              <h3>{b.name}</h3>
+              <p>{b.desc}</p>
+
+              {/* 진행률 */}
               <div className="progress-bar">
                 <div
                   className="progress-fill"
-                  style={{
-                    width: `${(unlockedCount / totalCount) * 100}%`,
-                  }}
-                ></div>
+                  style={{ width: `${b.progress}%` }}
+                />
               </div>
-            </div>
-          </div>
-        </div>
+              <p>{b.progress}%</p>
 
-        {/* 카테고리 필터 */}
-        <div className="category-filter">
-          {categories.map((category) => (
-            <button
-              key={category.id}
-              className={`category-btn ${
-                selectedCategory === category.id ? "active" : ""
-              }`}
-              onClick={() => setSelectedCategory(category.id)}
-            >
-              <span className="category-icon">{category.icon}</span>
-              <span className="category-name">{category.name}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* 업적 목록 */}
-        <div className="achievements-grid">
-          {filteredAchievements.map((achievement) => (
-            <div
-              key={achievement.id}
-              className={`achievement-card ${
-                achievement.isUnlocked ? "unlocked" : "locked"
-              }`}
-              onClick={() => setSelectedId(achievement.id)}
-            >
-              <div className="achievement-icon">{achievement.icon}</div>
-
-              <div className="achievement-content">
-                <h3 className="achievement-title">{achievement.title}</h3>
-                <p className="achievement-description">
-                  {achievement.description}
-                </p>
-
-                <div className="achievement-progress">
-                  <div className="progress-info">
-                    <span>
-                      {achievement.progress} / {achievement.maxProgress}
-                    </span>
-                    <span className="reward">{achievement.reward}</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div
-                      className="progress-fill"
-                      style={{
-                        width: `${
-                          (achievement.progress / achievement.maxProgress) * 100
-                        }%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                {achievement.isUnlocked && achievement.unlockedAt && (
-                  <div className="unlocked-info">
-                    <span className="unlocked-date">
-                      {new Date(achievement.unlockedAt).toLocaleDateString()} 달성
-                    </span>
-                  </div>
-                )}
-              </div>
+              {/* 달성 날짜 */}
+              {b.unlocked && b.date && (
+                <p className="date">획득일: {b.date}</p>
+              )}
+              {!b.unlocked && <p>🔒 아직 달성하지 못했습니다.</p>}
             </div>
           ))}
         </div>
       </div>
 
       {/* 모달 */}
-      {selectedAchievement && (
-        <div className="modal-overlay" onClick={() => setSelectedId(null)}>
+      {currentBadge && (
+        <div className="modal-overlay" onClick={() => setSelected(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{selectedAchievement.title}</h3>
-            <p>{selectedAchievement.description}</p>
-            <p>
-              진행도: {selectedAchievement.progress} /{" "}
-              {selectedAchievement.maxProgress}
-            </p>
-            <p>보상: {selectedAchievement.reward}</p>
-            {selectedAchievement.isUnlocked ? (
+            <h3>{currentBadge.name}</h3>
+            <p>{currentBadge.desc}</p>
+            <p>진척도: {currentBadge.progress}%</p>
+            {currentBadge.unlocked ? (
               <p>✅ 이미 달성한 업적입니다!</p>
             ) : (
               <p>🔒 아직 달성하지 못했습니다.</p>
             )}
-            {selectedAchievement.unlockedAt && (
-              <p>📅 달성일: {selectedAchievement.unlockedAt}</p>
+            {currentBadge.date && (
+              <p>📅 달성일: {currentBadge.date}</p>
             )}
-            <button onClick={() => setSelectedId(null)}>닫기</button>
+            <button onClick={() => setSelected(null)}>닫기</button>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 
 export default Achievements;
-
-

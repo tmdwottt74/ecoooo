@@ -1,22 +1,25 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timedelta
 import json
 
 from backend.database import get_db
-from ..models import User, CreditsLedger, MobilityLog, UserGarden, GardenWateringLog, GardenLevel
+from backend.models import User, CreditsLedger, MobilityLog, UserGarden, GardenWateringLog, GardenLevel
 from backend.schemas import (
     CreditBalance, CreditTransaction, CreditHistory, 
-    GardenStatus, WateringRequest, WateringResponse
+    GardenStatus, WateringRequest, WateringResponse, AddPointsRequest
 )
+from backend.dependencies import get_current_user
 
 router = APIRouter(prefix="/api/credits", tags=["credits"])
 
 # 크레딧 잔액 조회
-@router.get("/balance/{user_id}", response_model=CreditBalance)
-async def get_credit_balance(user_id: int, db: Session = Depends(get_db)):
+@router.get("/balance", response_model=CreditBalance)
+async def get_credit_balance(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """사용자의 크레딧 잔액을 조회합니다."""
+    user_id = current_user.user_id
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -25,7 +28,7 @@ async def get_credit_balance(user_id: int, db: Session = Depends(get_db)):
     total_points = db.query(CreditsLedger).filter(
         CreditsLedger.user_id == user_id
     ).with_entities(
-        db.func.sum(CreditsLedger.points)
+        func.sum(CreditsLedger.points)
     ).scalar() or 0
     
     # 최근 30일 적립 포인트
@@ -35,7 +38,7 @@ async def get_credit_balance(user_id: int, db: Session = Depends(get_db)):
         CreditsLedger.type == "EARN",
         CreditsLedger.created_at >= thirty_days_ago
     ).with_entities(
-        db.func.sum(CreditsLedger.points)
+        func.sum(CreditsLedger.points)
     ).scalar() or 0
     
     return CreditBalance(
@@ -48,12 +51,13 @@ async def get_credit_balance(user_id: int, db: Session = Depends(get_db)):
 # 크레딧 거래 내역 조회
 @router.get("/history/{user_id}", response_model=List[CreditTransaction])
 async def get_credit_history(
-    user_id: int, 
     limit: int = 20, 
     offset: int = 0,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """사용자의 크레딧 거래 내역을 조회합니다."""
+    user_id = current_user.user_id
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -79,14 +83,15 @@ async def get_credit_history(
 # 포인트 적립
 @router.post("/earn", response_model=CreditTransaction)
 async def earn_points(
-    user_id: int,
     points: int,
     reason: str,
     ref_log_id: Optional[int] = None,
     meta: Optional[dict] = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """사용자에게 포인트를 적립합니다."""
+    user_id = current_user.user_id
     if points <= 0:
         raise HTTPException(status_code=400, detail="Points must be positive")
     
@@ -120,13 +125,14 @@ async def earn_points(
 # 포인트 사용
 @router.post("/spend", response_model=CreditTransaction)
 async def spend_points(
-    user_id: int,
     points: int,
     reason: str,
     meta: Optional[dict] = None,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """사용자의 포인트를 차감합니다."""
+    user_id = current_user.user_id
     if points <= 0:
         raise HTTPException(status_code=400, detail="Points must be positive")
     
@@ -138,7 +144,7 @@ async def spend_points(
     current_balance = db.query(CreditsLedger).filter(
         CreditsLedger.user_id == user_id
     ).with_entities(
-        db.func.sum(CreditsLedger.points)
+        func.sum(CreditsLedger.points)
     ).scalar() or 0
     
     if current_balance < points:
@@ -170,16 +176,19 @@ async def spend_points(
 @router.post("/garden/water", response_model=WateringResponse)
 async def water_garden(
     request: WateringRequest,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """정원에 물을 줍니다."""
-    user = db.query(User).filter(User.user_id == request.user_id).first()
+    user_id = current_user.user_id
+    # request.user_id는 더 이상 사용하지 않음 (JWT에서 추출한 user_id 사용)
+    user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
     # 사용자 정원 조회
     garden = db.query(UserGarden).filter(
-        UserGarden.user_id == request.user_id
+        UserGarden.user_id == user_id
     ).first()
     
     if not garden:
@@ -191,7 +200,7 @@ async def water_garden(
             raise HTTPException(status_code=500, detail="Garden levels not initialized")
         
         garden = UserGarden(
-            user_id=request.user_id,
+            user_id=user_id,
             current_level_id=first_level.level_id,
             waters_count=0,
             total_waters=0
@@ -202,9 +211,9 @@ async def water_garden(
     
     # 현재 잔액 확인
     current_balance = db.query(CreditsLedger).filter(
-        CreditsLedger.user_id == request.user_id
+        CreditsLedger.user_id == user_id
     ).with_entities(
-        db.func.sum(CreditsLedger.points)
+        func.sum(CreditsLedger.points)
     ).scalar() or 0
     
     if current_balance < request.points_spent:
@@ -212,7 +221,7 @@ async def water_garden(
     
     # 포인트 차감
     credit_entry = CreditsLedger(
-        user_id=request.user_id,
+        user_id=user_id,
         type="SPEND",
         points=-request.points_spent,
         reason="GARDEN_WATERING",
@@ -223,7 +232,7 @@ async def water_garden(
     # 물주기 로그 기록
     watering_log = GardenWateringLog(
         garden_id=garden.garden_id,
-        user_id=request.user_id,
+        user_id=user_id,
         points_spent=request.points_spent
     )
     db.add(watering_log)
@@ -265,8 +274,9 @@ async def water_garden(
 
 # 정원 상태 조회
 @router.get("/garden/{user_id}", response_model=GardenStatus)
-async def get_garden_status(user_id: int, db: Session = Depends(get_db)):
+async def get_garden_status(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """사용자의 정원 상태를 조회합니다."""
+    user_id = current_user.user_id
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -303,56 +313,44 @@ async def get_garden_status(user_id: int, db: Session = Depends(get_db)):
 
 # 포인트 총합 조회 (간단한 버전)
 @router.get("/total/{user_id}")
-async def get_total_points(user_id: str, db: Session = Depends(get_db)):
+async def get_total_points(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """사용자의 총 포인트를 조회합니다."""
+    user_id = current_user.user_id
     try:
-        # 문자열 user_id를 정수로 변환 시도
-        try:
-            user_id_int = int(user_id)
-        except ValueError:
-            # prototype_user 같은 문자열인 경우 기본값 반환
-            return {"total_points": 1240}
-        
-        user = db.query(User).filter(User.user_id == user_id_int).first()
+        user = db.query(User).filter(User.user_id == user_id).first()
         if not user:
-            return {"total_points": 1240}  # 기본값 반환
+            return {"total_points": 0}  # 사용자 없으면 0 반환
         
         total_points = db.query(CreditsLedger).filter(
-            CreditsLedger.user_id == user_id_int
+            CreditsLedger.user_id == user_id
         ).with_entities(
-            db.func.sum(CreditsLedger.points)
-        ).scalar() or 1240
+            func.sum(CreditsLedger.points)
+        ).scalar() or 0
         
         return {"total_points": total_points}
     except Exception as e:
         print(f"Error fetching total points: {e}")
-        return {"total_points": 1240}
+        return {"total_points": 0}
 
 # 포인트 업데이트
 @router.post("/update")
 async def update_total_points(
-    user_id: str,
     total_points: int,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """사용자의 총 포인트를 업데이트합니다."""
+    user_id = current_user.user_id
     try:
-        # 문자열 user_id를 정수로 변환 시도
-        try:
-            user_id_int = int(user_id)
-        except ValueError:
-            # prototype_user 같은 문자열인 경우 성공 응답만 반환
-            return {"success": True, "message": "Points updated for prototype user"}
-        
-        user = db.query(User).filter(User.user_id == user_id_int).first()
+        user = db.query(User).filter(User.user_id == user_id).first()
         if not user:
-            return {"success": True, "message": "User not found, but operation completed"}
+            return {"success": False, "message": "User not found"}
         
         # 현재 총 포인트와의 차이 계산
         current_total = db.query(CreditsLedger).filter(
-            CreditsLedger.user_id == user_id_int
+            CreditsLedger.user_id == user_id
         ).with_entities(
-            db.func.sum(CreditsLedger.points)
+            func.sum(CreditsLedger.points)
         ).scalar() or 0
         
         points_diff = total_points - current_total
@@ -360,7 +358,7 @@ async def update_total_points(
         if points_diff != 0:
             # 차이만큼 포인트 추가/차감
             credit_entry = CreditsLedger(
-                user_id=user_id_int,
+                user_id=user_id,
                 type="EARN" if points_diff > 0 else "SPEND",
                 points=points_diff,
                 reason="MANUAL_UPDATE",
@@ -372,69 +370,64 @@ async def update_total_points(
         return {"success": True, "message": "Points updated successfully"}
     except Exception as e:
         print(f"Error updating points: {e}")
-        return {"success": True, "message": "Points update completed"}
+        return {"success": False, "message": "Points update failed"}
 
 # 포인트 추가
 @router.post("/add")
 async def add_points(
-    user_id: str,
-    points: int,
-    reason: str,
+    request: AddPointsRequest,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """사용자에게 포인트를 추가/차감합니다. (양수: 추가, 음수: 차감)"""
+    user_id = current_user.user_id
     try:
-        # 문자열 user_id를 정수로 변환 시도
-        try:
-            user_id_int = int(user_id)
-        except ValueError:
-            # prototype_user 같은 문자열인 경우 성공 응답만 반환
-            return {"success": True, "message": f"Added {points} points for prototype user"}
-        
-        user = db.query(User).filter(User.user_id == user_id_int).first()
+        # request.user_id는 더 이상 사용하지 않음 (JWT에서 추출한 user_id 사용)
+        user = db.query(User).filter(User.user_id == user_id).first()
         if not user:
-            return {"success": True, "message": "User not found, but operation completed"}
+            return {"success": False, "message": "User not found"}
         
         # 음수 포인트인 경우 잔액 확인
-        if points < 0:
+        if request.points < 0:
             total_points = db.query(CreditsLedger).filter(
-                CreditsLedger.user_id == user_id_int
+                CreditsLedger.user_id == user_id
             ).with_entities(
-                db.func.sum(CreditsLedger.points)
+                func.sum(CreditsLedger.points)
             ).scalar() or 0
             
-            if total_points + points < 0:
+            if total_points + request.points < 0:
                 return {"success": False, "message": "Insufficient credits"}
         
         # 거래 타입 결정
-        transaction_type = "EARN" if points > 0 else "SPEND"
+        transaction_type = "EARN" if request.points > 0 else "SPEND"
         
         # 포인트 추가/차감
         credit_entry = CreditsLedger(
-            user_id=user_id_int,
+            user_id=user_id,
             type=transaction_type,
-            points=points,
-            reason=reason,
-            meta_json={"points_change": points}
+            points=request.points,
+            reason=request.reason,
+            meta_json={"points_change": request.points}
         )
         db.add(credit_entry)
         db.commit()
         
-        action = "Added" if points > 0 else "Deducted"
-        return {"success": True, "message": f"{action} {abs(points)} points successfully"}
+        action = "Added" if request.points > 0 else "Deducted"
+        return {"success": True, "message": f"{action} {abs(request.points)} points successfully"}
     except Exception as e:
         print(f"Error adding points: {e}")
-        return {"success": True, "message": "Points added successfully"}
+        return {"success": False, "message": "Points added failed"}
 
 # 대중교통 이용 내역 조회
 @router.get("/mobility/{user_id}", response_model=List[dict])
 async def get_mobility_history(
-    user_id: int,
     limit: int = 20,
     offset: int = 0,
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """사용자의 대중교통 이용 내역을 조회합니다."""
+    user_id = current_user.user_id
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -460,111 +453,3 @@ async def get_mobility_history(
         }
         for log in logs
     ]
-
-# 챌린지 완료 시 포인트 지급
-@router.post("/challenge/complete")
-async def complete_challenge(
-    user_id: int,
-    challenge_id: str,
-    challenge_type: str,
-    points: int,
-    challenge_name: str,
-    db: Session = Depends(get_db)
-):
-    """챌린지 완료 시 포인트를 지급합니다."""
-    user = db.query(User).filter(User.user_id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if points <= 0:
-        raise HTTPException(status_code=400, detail="Points must be positive")
-    
-    # 크레딧 장부에 기록
-    credit_entry = CreditsLedger(
-        user_id=user_id,
-        type="EARN",
-        points=points,
-        reason=f"챌린지 완료: {challenge_name}",
-        meta_json={
-            "challenge_id": challenge_id,
-            "challenge_type": challenge_type,
-            "challenge_name": challenge_name
-        }
-    )
-    
-    db.add(credit_entry)
-    db.commit()
-    db.refresh(credit_entry)
-    
-    return {
-        "success": True,
-        "message": f"챌린지 '{challenge_name}' 완료! {points} 포인트를 획득했습니다.",
-        "points_earned": points,
-        "transaction_id": credit_entry.entry_id
-    }
-
-# 활동 완료 시 포인트 지급
-@router.post("/activity/complete")
-async def complete_activity(
-    user_id: int,
-    activity_type: str,
-    distance: float,
-    carbon_saved: float,
-    points: int,
-    route: str,
-    db: Session = Depends(get_db)
-):
-    """활동 완료 시 포인트를 지급합니다."""
-    user = db.query(User).filter(User.user_id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if points <= 0:
-        raise HTTPException(status_code=400, detail="Points must be positive")
-    
-    # 모빌리티 로그 생성
-    mobility_log = MobilityLog(
-        user_id=user_id,
-        mode=activity_type.upper(),
-        distance_km=distance,
-        started_at=datetime.utcnow() - timedelta(minutes=30),  # 예상 시작 시간
-        ended_at=datetime.utcnow(),
-        co2_saved_g=carbon_saved,
-        points_earned=points,
-        description=f"{activity_type} 활동",
-        start_point=route.split(" → ")[0] if " → " in route else "시작점",
-        end_point=route.split(" → ")[1] if " → " in route else "도착점"
-    )
-    
-    db.add(mobility_log)
-    db.commit()
-    db.refresh(mobility_log)
-    
-    # 크레딧 장부에 기록
-    credit_entry = CreditsLedger(
-        user_id=user_id,
-        ref_log_id=mobility_log.log_id,
-        type="EARN",
-        points=points,
-        reason=f"{activity_type} 활동 완료",
-        meta_json={
-            "activity_type": activity_type,
-            "distance": distance,
-            "carbon_saved": carbon_saved,
-            "route": route
-        }
-    )
-    
-    db.add(credit_entry)
-    db.commit()
-    db.refresh(credit_entry)
-    
-    return {
-        "success": True,
-        "message": f"{activity_type} 활동 완료! {points} 포인트를 획득했습니다.",
-        "points_earned": points,
-        "carbon_saved": carbon_saved,
-        "transaction_id": credit_entry.entry_id,
-        "mobility_log_id": mobility_log.log_id
-    }
-

@@ -1,131 +1,147 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
+import json
 
-from ..database import get_db
-from ..models import UserSessionState, User
-from ..schemas import SessionStateCreate, SessionStateUpdate, SessionStateResponse
+from backend.database import get_db
+from backend.models import User
 
 router = APIRouter(prefix="/api/session", tags=["session"])
 
-@router.get("/{user_id}/{session_key}")
-async def get_session_state(
+# 세션 데이터 저장 (메모리 기반 - 실제 운영에서는 Redis 등 사용)
+session_store: Dict[str, Dict[str, Any]] = {}
+
+@router.post("/create")
+async def create_session(
     user_id: int,
-    session_key: str,
+    session_data: Optional[Dict[str, Any]] = None,
     db: Session = Depends(get_db)
 ):
-    """사용자의 특정 세션 상태 조회"""
+    """새 세션을 생성합니다."""
     try:
-        session_state = db.query(UserSessionState).filter(
-            UserSessionState.user_id == user_id,
-            UserSessionState.session_key == session_key
-        ).first()
+        # 사용자 존재 확인
+        user = db.query(User).filter(User.user_id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
         
-        if not session_state:
-            return {"session_key": session_key, "data": None}
+        # 세션 ID 생성
+        session_id = f"session_{user_id}_{int(datetime.now().timestamp())}"
+        
+        # 세션 데이터 저장
+        session_data = session_data or {}
+        session_data.update({
+            "user_id": user_id,
+            "created_at": datetime.now().isoformat(),
+            "last_activity": datetime.now().isoformat(),
+            "is_active": True
+        })
+        
+        session_store[session_id] = session_data
         
         return {
-            "session_key": session_key,
-            "data": session_state.session_data,
-            "updated_at": session_state.updated_at
+            "success": True,
+            "session_id": session_id,
+            "user_id": user_id,
+            "created_at": session_data["created_at"]
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"세션 상태 조회 실패: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"세션 생성 실패: {str(e)}")
 
-@router.post("/{user_id}/{session_key}")
-async def save_session_state(
-    user_id: int,
-    session_key: str,
-    session_data: Dict[str, Any],
-    db: Session = Depends(get_db)
+@router.get("/{session_id}")
+async def get_session(session_id: str):
+    """세션 정보를 조회합니다."""
+    if session_id not in session_store:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session_data = session_store[session_id]
+    
+    # 세션 만료 확인 (24시간)
+    created_at = datetime.fromisoformat(session_data["created_at"])
+    if datetime.now() - created_at > timedelta(hours=24):
+        del session_store[session_id]
+        raise HTTPException(status_code=410, detail="Session expired")
+    
+    return {
+        "session_id": session_id,
+        "session_data": session_data
+    }
+
+@router.put("/{session_id}/update")
+async def update_session(
+    session_id: str,
+    update_data: Dict[str, Any]
 ):
-    """사용자의 세션 상태 저장/업데이트"""
-    try:
-        # 기존 세션 상태 확인
-        existing_state = db.query(UserSessionState).filter(
-            UserSessionState.user_id == user_id,
-            UserSessionState.session_key == session_key
-        ).first()
-        
-        if existing_state:
-            # 업데이트
-            existing_state.session_data = session_data
-            existing_state.updated_at = datetime.utcnow()
-            db.commit()
-            return {"message": "세션 상태가 업데이트되었습니다", "session_key": session_key}
-        else:
-            # 새로 생성
-            new_state = UserSessionState(
-                user_id=user_id,
-                session_key=session_key,
-                session_data=session_data
-            )
-            db.add(new_state)
-            db.commit()
-            return {"message": "세션 상태가 저장되었습니다", "session_key": session_key}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"세션 상태 저장 실패: {str(e)}")
+    """세션 데이터를 업데이트합니다."""
+    if session_id not in session_store:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session_data = session_store[session_id]
+    session_data.update(update_data)
+    session_data["last_activity"] = datetime.now().isoformat()
+    
+    return {
+        "success": True,
+        "message": "세션이 업데이트되었습니다",
+        "session_data": session_data
+    }
 
-@router.delete("/{user_id}/{session_key}")
-async def delete_session_state(
-    user_id: int,
-    session_key: str,
-    db: Session = Depends(get_db)
-):
-    """사용자의 특정 세션 상태 삭제"""
-    try:
-        session_state = db.query(UserSessionState).filter(
-            UserSessionState.user_id == user_id,
-            UserSessionState.session_key == session_key
-        ).first()
-        
-        if not session_state:
-            raise HTTPException(status_code=404, detail="세션 상태를 찾을 수 없습니다")
-        
-        db.delete(session_state)
-        db.commit()
-        return {"message": "세션 상태가 삭제되었습니다"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"세션 상태 삭제 실패: {str(e)}")
+@router.delete("/{session_id}")
+async def delete_session(session_id: str):
+    """세션을 삭제합니다."""
+    if session_id not in session_store:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    del session_store[session_id]
+    
+    return {
+        "success": True,
+        "message": "세션이 삭제되었습니다"
+    }
 
-@router.get("/{user_id}")
-async def get_all_session_states(
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    """사용자의 모든 세션 상태 조회"""
-    try:
-        session_states = db.query(UserSessionState).filter(
-            UserSessionState.user_id == user_id
-        ).all()
-        
-        result = {}
-        for state in session_states:
-            result[state.session_key] = {
-                "data": state.session_data,
-                "updated_at": state.updated_at
-            }
-        
-        return {"user_id": user_id, "session_states": result}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"세션 상태 조회 실패: {str(e)}")
+@router.get("/user/{user_id}/sessions")
+async def get_user_sessions(user_id: int):
+    """사용자의 모든 활성 세션을 조회합니다."""
+    user_sessions = []
+    
+    for session_id, session_data in session_store.items():
+        if session_data.get("user_id") == user_id and session_data.get("is_active", False):
+            user_sessions.append({
+                "session_id": session_id,
+                "created_at": session_data["created_at"],
+                "last_activity": session_data["last_activity"]
+            })
+    
+    return {
+        "user_id": user_id,
+        "sessions": user_sessions,
+        "total_sessions": len(user_sessions)
+    }
 
-@router.delete("/{user_id}")
-async def clear_all_session_states(
-    user_id: int,
-    db: Session = Depends(get_db)
-):
-    """사용자의 모든 세션 상태 삭제 (로그아웃 시 사용)"""
-    try:
-        db.query(UserSessionState).filter(
-            UserSessionState.user_id == user_id
-        ).delete()
-        db.commit()
-        return {"message": "모든 세션 상태가 삭제되었습니다"}
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"세션 상태 삭제 실패: {str(e)}")
+@router.post("/{session_id}/extend")
+async def extend_session(session_id: str, hours: int = 24):
+    """세션을 연장합니다."""
+    if session_id not in session_store:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session_data = session_store[session_id]
+    session_data["last_activity"] = datetime.now().isoformat()
+    session_data["expires_at"] = (datetime.now() + timedelta(hours=hours)).isoformat()
+    
+    return {
+        "success": True,
+        "message": f"세션이 {hours}시간 연장되었습니다",
+        "expires_at": session_data["expires_at"]
+    }
 
+@router.get("/health/check")
+async def session_health_check():
+    """세션 시스템 상태를 확인합니다."""
+    active_sessions = len([s for s in session_store.values() if s.get("is_active", False)])
+    
+    return {
+        "status": "healthy",
+        "total_sessions": len(session_store),
+        "active_sessions": active_sessions,
+        "timestamp": datetime.now().isoformat()
+    }

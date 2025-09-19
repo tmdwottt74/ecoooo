@@ -21,7 +21,7 @@ export interface TransportAnalysis {
 
 // 사용자 페르소나 데이터
 export interface UserPersona {
-  id: number;
+  id: string;
   name: string;
   email: string;
   password?: string; // 비밀번호 추가
@@ -44,7 +44,7 @@ export interface UserPersona {
 
 // 데모용 사용자 페르소나 데이터
 const DEMO_USER: UserPersona = {
-  id: 1,
+  id: "1",
   name: '김에코',
   email: 'kim.eco@example.com',
   phone: '010-1234-5678',
@@ -66,7 +66,6 @@ const DEMO_USER: UserPersona = {
 interface UserContextType {
   user: UserPersona;
   updateUser: (updates: Partial<UserPersona>) => void;
-  fetchTransportAnalysis: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -84,6 +83,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (authUser) {
       setUser(prev => ({
         ...prev,
+        id: authUser.id, // AuthContext에서 이미 string으로 변환됨
         name: authUser.name,
         email: authUser.email,
         password: authUser.password,
@@ -91,25 +91,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
     }
   }, [authUser]);
-
-  // 컴포넌트 마운트 시 localStorage에서 사용자 정보 불러오기
-  useEffect(() => {
-    const savedUser = localStorage.getItem('eco-user');
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser);
-        setUser(prev => ({
-          ...prev,
-          name: userData.name,
-          email: userData.email,
-          password: userData.password,
-          phone: userData.phone || prev.phone,
-        }));
-      } catch (error) {
-        console.error('Failed to parse saved user data:', error);
-      }
-    }
-  }, []);
 
   // localStorage에서 크레딧 데이터를 가져와서 UserContext 동기화
   useEffect(() => {
@@ -188,7 +169,6 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const value: UserContextType = {
     user,
     updateUser,
-    fetchTransportAnalysis,
     isLoading
   };
 

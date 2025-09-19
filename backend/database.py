@@ -1,27 +1,25 @@
 from sqlalchemy import create_engine
-from sqlalchemy import text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
-from .config import DB_HOST, DB_PORT, DB_USER, DB_PASS, DB_NAME
 
-load_dotenv() # Load environment variables from .env file (if exists)
+load_dotenv() # Load environment variables from .env file
 
-# 데이터베이스 URL 설정 - config.py에서 가져온 값 사용
+# 데이터베이스 URL 설정
+DB_HOST = os.getenv("DB_HOST", "seoul-ht-08-db.cpk0oamsu0g6.us-west-1.rds.amazonaws.com")
+DB_PORT = os.getenv("DB_PORT", "3306")
+DB_USER = os.getenv("DB_USER", "admin")
+DB_PASS = os.getenv("DB_PASS", "!donggukCAI1234")
+DB_NAME = os.getenv("DB_NAME", "seoul-ht-08-db")
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     f"mysql+pymysql://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 )
-
-print("DB_HOST =", DB_HOST)
-print("DB_PORT =", DB_PORT)
-print("DB_USER =", DB_USER)
-print("DB_NAME =", DB_NAME)
-
-# Base 클래스 생성
-Base = declarative_base()
+# Fallback to SQLite if no MySQL env vars are set
+if not DB_USER or not DB_PASS or not DB_NAME:
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./ecoooo.db")
 
 # SQLAlchemy 엔진 생성
 engine = create_engine(
@@ -34,6 +32,9 @@ engine = create_engine(
 # 세션 팩토리 생성
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Base 클래스 생성
+Base = declarative_base()
+
 def get_db():
     """데이터베이스 세션을 생성하고 반환합니다."""
     db = SessionLocal()
@@ -44,14 +45,12 @@ def get_db():
 
 def init_db():
     """데이터베이스 테이블을 생성하고 초기 데이터를 시딩합니다."""
-    # models를 import하여 Base를 가져옴
-    from . import models
+    from .models import Base
     from .seed_admin_user import seed_admin_user
     from .seed_challenges import seed_challenges
     from .seed_garden_levels import seed_garden_levels
     from .crud import create_user_group # Assuming this is needed for initial groups
-    
-    # 모델 기반으로 모든 테이블 생성
+
     Base.metadata.create_all(bind=engine)
 
     # Seed initial data

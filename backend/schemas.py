@@ -305,23 +305,62 @@ class AddPointsRequest(BaseModel):
     points: int
     reason: str
 
-# 세션 상태 관련 스키마
-class SessionStateCreate(BaseModel):
-    session_data: Dict[str, Any]
-
-class SessionStateUpdate(BaseModel):
-    session_data: Dict[str, Any]
-
-class SessionStateResponse(BaseModel):
-    session_key: str
-    data: Optional[Dict[str, Any]] = None
-    updated_at: Optional[datetime] = None
-
-class ChatMessage(BaseModel):
-    sender: str  # "user" or "bot"
-    text: str
-    timestamp: Optional[datetime] = None
-
-class ChatSession(BaseModel):
-    messages: List[ChatMessage]
+# 통계 관련 스키마
+class StatisticsOverview(BaseModel):
+    total_users: int
+    total_credits: int
+    total_carbon_saved_kg: float
+    national_average_carbon_kg: float
+    active_users_30days: int
+    average_garden_level: float
     last_updated: datetime
+    class Config:
+        from_attributes = True
+
+class RegionalStatistics(BaseModel):
+    region: str
+    user_count: int
+    average_carbon_kg: float
+    total_carbon_saved_kg: float
+    air_quality_index: int
+    green_space_index: int
+    public_transport_index: int
+    recycling_rate_index: int
+    overall_score: int
+    last_updated: datetime
+    class Config:
+        from_attributes = True
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    user_id: int
+    name: str
+    total_credits: int
+    carbon_reduced_kg: float
+    badge_count: int
+    is_current_user: bool
+    class Config:
+        from_attributes = True
+
+class FriendsComparison(BaseModel):
+    user_id: int
+    user_credits: int
+    user_carbon_kg: float
+    friends_average_credits: float
+    friends_average_carbon_kg: float
+    national_average_carbon_kg: float
+    user_rank: int
+    total_users: int
+    percentile: float
+    last_updated: datetime
+    class Config:
+        from_attributes = True
+
+class UserRanking(BaseModel):
+    user_id: int
+    rank: int
+    total_users: int
+    percentile: float
+    last_updated: datetime
+    class Config:
+        from_attributes = True

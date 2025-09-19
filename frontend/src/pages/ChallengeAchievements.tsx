@@ -886,47 +886,52 @@ const ChallengeAchievements: React.FC = () => {
   }, [addCredits]);
 
   useEffect(() => {
-    // 챌린지 데이터 로드
-    fetch(`${API_URL}/api/challenges`, { headers: getAuthHeaders() })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("API 실패");
-      })
-      .then((data) => {
-        // Map backend's is_joined to frontend's isParticipating
-        const mappedChallenges = data.map((c: any) => ({
-          id: c.id,
-          title: c.title,
-          description: c.description,
-          progress: c.progress,
-          reward: c.reward,
-          isParticipating: c.is_joined, // Map is_joined to isParticipating
-          isCompleted: c.is_completed || false, // Assuming backend might send is_completed or default to false
-          startDate: c.start_at, // Assuming backend sends start_at
-          endDate: c.end_at // Assuming backend sends end_at
-        }));
-        setChallenges(mappedChallenges);
-      })
-      .catch((error) => { // Catch the error object
-        console.error("챌린지 데이터 로드 실패:", error);
-        setChallenges(dummyChallenges);
-      });
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // 챌린지 데이터 로드
+        const response = await fetch(`${API_URL}/api/challenges`, { headers: getAuthHeaders() });
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Map backend's is_joined to frontend's isParticipating
+          const mappedChallenges = data.map((c: any) => ({
+            id: c.id,
+            title: c.title,
+            description: c.description,
+            progress: c.progress,
+            reward: c.reward,
+            isParticipating: c.is_joined, // Map is_joined to isParticipating
+            isCompleted: c.is_completed || false, // Assuming backend might send is_completed or default to false
+            startDate: c.start_at, // Assuming backend sends start_at
+            endDate: c.end_at // Assuming backend sends end_at
+          }));
+          setChallenges(mappedChallenges);
+        } else {
+          throw new Error("API 실패");
+        }
 
-    // 업적 데이터 로드
-    fetch(`${API_URL}/api/achievements`, { headers: getAuthHeaders() })
-      .then((res) => {
-        if (res.ok) return res.json();
-        throw new Error("API 실패");
-      })
-      .then((data) => {
-        setAchievements(data);
-      })
-      .catch(() => {
+        // 업적 데이터 로드
+        const achievementsResponse = await fetch(`${API_URL}/api/achievements`, { headers: getAuthHeaders() });
+        
+        if (achievementsResponse.ok) {
+          const achievementsData = await achievementsResponse.json();
+          setAchievements(achievementsData);
+        } else {
+          throw new Error("API 실패");
+        }
+      } catch (error) {
+        console.error("데이터 로드 실패:", error);
+        setChallenges(dummyChallenges);
         setAchievements(dummyAchievements);
-      })
-      .finally(() => {
+      } finally {
+        // 로딩 상태 해제
         setLoading(false);
-      });
+      }
+    };
+
+    loadData();
   }, []);
 
   if (loading) {

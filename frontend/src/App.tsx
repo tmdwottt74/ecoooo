@@ -28,13 +28,27 @@ import { ChatPreview, CreditPreview, GardenPreview } from "./components/PreviewC
 
 
 // 로고 컴포넌트
-const Logo: React.FC = () => (
-  <div className="logo">
-    <Link to="/home" style={{ textDecoration: "none", color: "inherit" }}>
-      <img src="/eco1-w.png" alt="ECO LIFE" className="logo-image" />
-    </Link>
-  </div>
-);
+const Logo: React.FC = () => {
+  const navigate = useNavigate();
+  
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // 로그인 상태와 관계없이 항상 홈화면으로 이동
+    navigate('/home');
+  };
+
+  return (
+    <div className="logo">
+      <a 
+        href="#" 
+        onClick={handleLogoClick}
+        style={{ textDecoration: "none", color: "inherit" }}
+      >
+        <span className="logo-text">🌱 ECO LIFE</span>
+      </a>
+    </div>
+  );
+};
 
 function AppContent() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,61 +67,21 @@ function AppContent() {
     console.log('인증 상태:', { isAuthenticated, user, pathname: location.pathname });
   }, [isAuthenticated, user, location.pathname]);
 
-  // 페이지 이동 시 스크롤을 맨 위로 이동 및 로딩 표시
-  useEffect(() => {
-    // 탭 이동 시 로딩 표시 (0.3초 미만이므로 로딩 화면 표시되지 않음)
-    const tabRoutes = ['/dashboard', '/my-garden', '/challenge-achievements'];
-    if (tabRoutes.includes(location.pathname)) {
-      showLoading('페이지를 불러오는 중...');
-      
-      // 짧은 지연 후 로딩 해제 (실제 데이터 로딩 시뮬레이션)
-      const timer = setTimeout(() => {
-        hideLoading();
-      }, 200); // 로딩 시간을 200ms로 단축 (0.3초 미만)
-      
-      return () => clearTimeout(timer);
-    }
-    
-    // 강력한 스크롤 초기화 - 여러 방법으로 확실하게 처리
-    const scrollToTop = () => {
-      // 1. window 스크롤 초기화
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: 'auto' // 즉시 이동 (부드러운 애니메이션 없음)
-      });
-      
-      // 2. document 요소들 초기화
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      
-      // 3. 모든 스크롤 가능한 요소 초기화
-      const scrollableElements = document.querySelectorAll(
-        '[style*="overflow"], .scrollable, .content, .message-window, .chat-container, main, .auth-container'
-      );
-      scrollableElements.forEach(element => {
-        if (element instanceof HTMLElement) {
-          element.scrollTop = 0;
-          element.scrollLeft = 0;
-        }
-      });
-      
-      // 4. 추가 보장을 위해 약간의 지연 후 다시 실행
-      setTimeout(() => {
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      }, 10);
-    };
-    
-    // 즉시 실행
-    scrollToTop();
-    
-    // 컴포넌트가 마운트된 후에도 한 번 더 실행
-    const timer = setTimeout(scrollToTop, 100);
-    
-    return () => clearTimeout(timer);
-  }, [location.pathname, location.search, showLoading, hideLoading]); // search 파라미터 변경 시에도 스크롤 초기화
+ // 페이지 이동 시 스크롤을 맨 위로 이동
+   useEffect(() => {
+    // 즉시 스크롤 초기화
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+
+    const scrollableElements = document.querySelectorAll('[style*="overflow"], .scrollable, .content');
+    scrollableElements.forEach(element => {
+      if (element instanceof HTMLElement) {
+        element.scrollTop = 0;
+      }
+    });
+  }, [location.pathname, location.search]); // ✅ 여기서 useEffect 끝나야 정상
+
 
   // 홈 화면 접속 시 How to Use 팝업 표시 (사용자별 최초 1회)
   useEffect(() => {
@@ -219,6 +193,13 @@ function AppContent() {
       navigate('/login');
     }
   }, [isAuthenticated, isAuthPage, isPreview, location.pathname, navigate]);
+
+  // 로그인된 사용자가 루트(/)에 접근하면 홈화면으로 리다이렉트
+  useEffect(() => {
+    if (isAuthenticated && location.pathname === '/') {
+      navigate('/home');
+    }
+  }, [isAuthenticated, location.pathname, navigate]);
 
 
   return (

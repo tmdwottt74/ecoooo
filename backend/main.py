@@ -3,9 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from backend.routes import dashboard, credits, session, database, challenges, auth, achievements, users, admin
-from backend.routes.chat_router import router as chat_router
-from backend.database import init_db, get_db
+from backend.routes import dashboard, credits, challenges, auth, achievements, users, admin
+from backend import database
+from backend.bedrock_logic import router as chat_router
+from backend.routes.statistics import router as statistics_router
+from backend.routes.websocket import router as websocket_router
+from backend.database import init_db, get_db, SessionLocal
 from backend.seed_admin_user import seed_admin_user
 
 import os
@@ -48,35 +51,36 @@ app.include_router(achievements.router)
 app.include_router(users.router)
 app.include_router(admin.router)
 app.include_router(chat_router)
-app.include_router(session.router)
-app.include_router(database.router)
 
+app.include_router(statistics_router)
 
-# ✅ 앱 시작 시 DB 초기화 + 관리자 시드
 @app.on_event("startup")
-def startup_event():
+async def startup_event():
+    """앱 시작시 실행되는 이벤트"""
+    # 데이터베이스 테이블 생성
     init_db()
-    db: Session = next(get_db())
+
+    # 관리자 사용자 시드
+    db = SessionLocal()
     try:
         seed_admin_user(db)
     finally:
         db.close()
 
 
-# 기본 엔드포인트
 @app.get("/")
 async def root():
+    """루트 엔드포인트"""
     return {
         "message": "Ecooo API 서버가 실행 중입니다!",
         "version": "1.0.0",
         "docs": "/docs"
     }
 
-# 헬스체크
 @app.get("/health")
 async def health_check():
+    """헬스 체크 엔드포인트"""
     return {"status": "healthy", "message": "서버가 정상적으로 작동 중입니다"}
-
 
 if __name__ == "__main__":
     import uvicorn

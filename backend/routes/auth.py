@@ -7,10 +7,14 @@ from typing import Optional
 
 from .. import crud, schemas
 from ..database import get_db
-from ..config import SECRET_KEY, ALGORITHM
 
-# ACCESS_TOKEN_EXPIRE_MINUTES 설정
+# .env 파일에서 SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES 로드
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+
+if not SECRET_KEY or not ALGORITHM:
+    raise ValueError("SECRET_KEY and ALGORITHM must be set in .env file")
 
 router = APIRouter(
     prefix="/auth",
