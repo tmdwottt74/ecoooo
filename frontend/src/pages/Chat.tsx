@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import "./Chat.css";
+/// <reference lib="dom" />
 
 // 메시지 타입
 interface Message {
@@ -14,11 +15,94 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isListening, setIsListening] = useState<boolean>(false); // 음성 인식 상태
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null); // SpeechRecognition 인스턴스 참조
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null); // Timer for silence detection
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isLoading]);
+
+  // 음성 인식 핸들러
+  const handleVoiceInput = () => {
+    if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      alert("죄송합니다. 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome 브라우저를 사용해 주세요.");
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = recognitionRef.current || new SpeechRecognition();
+    recognition.interimResults = true; // 중간 결과 반환
+    recognition.lang = 'ko-KR'; // 한국어 설정
+    recognition.continuous = true; // 연속 인식 활성화
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setStatusMessage("말씀해주세요...");
+      // Clear any previous timeout
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      setInputValue(finalTranscript || interimTranscript); // 최종 결과 또는 중간 결과 표시
+
+      // Reset silence timeout on new speech
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+      }
+      timeoutIdRef.current = setTimeout(() => {
+        recognition.stop(); // Stop recognition after 3 seconds of silence
+      }, 3000); // 3 seconds of silence
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error("음성 인식 오류:", event.error);
+      setIsListening(false);
+      setStatusMessage(`음성 인식 오류: ${event.error}`);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setStatusMessage("");
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+      if (inputValue.trim()) {
+        handleSendMessage(); // 인식이 끝나면 메시지 자동 전송
+      }
+    };
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      recognitionRef.current = recognition; // 인스턴스 저장
+    }
+  };
+
+  // 상태 메시지 (음성 인식용)
+  const [statusMessage, setStatusMessage] = useState<string>("");
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
@@ -277,11 +361,20 @@ const Chat: React.FC = () => {
       value={inputValue}
       onChange={(e) => setInputValue(e.target.value)}
       onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-      placeholder="메시지를 입력하세요..."
+      placeholder={isListening ? "말씀해주세요..." : "메시지를 입력하세요..."}
       className="message-input"
+      disabled={isListening} // Disable input while listening
     />
-    <button 
-      onClick={handleSendMessage} 
+    <button
+      onClick={handleVoiceInput}
+      className={`voice-button ${isListening ? 'listening' : ''}`}
+      disabled={isLoading}
+      title="음성 입력"
+    >
+      {isListening ? '🔴' : '🎤'}
+    </button>
+    <button
+      onClick={handleSendMessage}
       disabled={isLoading || !inputValue.trim()}
       className="send-button"
     >

@@ -123,6 +123,7 @@
   top: 0;
   left: 0;
   right: 0;
+  bottom: 0;
   height: 4px;
   background: linear-gradient(90deg, #1abc9c, #16a085, #1abc9c);
   background-size: 200% 100%;
@@ -783,4 +784,55 @@
   .send-button {
     font-size: 1rem; /* 작은 화면에서도 16px 이상 유지 */
   }
+}
+
+.voice-button {
+  flex-shrink: 0;
+  background: #f0f2f5; /* Light gray background */
+  border: none;
+  border-radius: 50%; /* Circular button */
+  width: 48px; /* Fixed width */
+  height: 48px; /* Fixed height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem; /* Microphone icon size */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: #6c757d; /* Gray icon color */
+}
+
+.voice-button:hover:not(:disabled) {
+  background: #e2e6ea; /* Slightly darker on hover */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.voice-button.listening {
+  background: #dc3545; /* Red when listening */
+  color: white;
+  animation: pulse-red 1.5s infinite; /* Pulsing animation */
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+.voice-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Adjust input container for the new button */
+.input-container.wide {
+  grid-template-columns: 1fr auto auto; /* Input, voice button, send button */
 }
