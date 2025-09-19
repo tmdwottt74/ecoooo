@@ -14,23 +14,26 @@ import { GardenProvider, GardenWithChat } from "./components/GardenChatIntegrati
 import { CreditsProvider } from "./contexts/CreditsContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
-import HowToService from "./components/HowToService";
+import { AppDataProvider } from "./contexts/AppDataContext";
+import { LoadingProvider, useLoading } from "./contexts/LoadingContext";
 import HowTo from "./pages/HowTo";
 import HowToPopup from "./components/HowToPopup";
+import DataManager from "./components/DataManager";
 import UserInfo from "./pages/UserInfo";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
 import Sidebar from "./components/Sidebar";
 import { ChatPreview, CreditPreview, GardenPreview } from "./components/PreviewComponents";
 
 
 // 로고 컴포넌트
 const Logo: React.FC = () => (
-  <h1 className="logo">
-    <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
-      ECO 🌱 LIFE
+  <div className="logo">
+    <Link to="/home" style={{ textDecoration: "none", color: "inherit" }}>
+      <img src="/eco1-w.png" alt="ECO LIFE" className="logo-image" />
     </Link>
-  </h1>
+  </div>
 );
 
 function AppContent() {
@@ -38,44 +41,118 @@ function AppContent() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showHowToPopup, setShowHowToPopup] = useState(false);
+  const [showDataManager, setShowDataManager] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const location = useLocation();
   const navigate = useNavigate();
   const isPreview = new URLSearchParams(location.search).get("preview") === "1";
 
-  // 페이지 이동 시 스크롤을 맨 위로 이동
+  // 디버깅을 위한 인증 상태 로그
   useEffect(() => {
-    // 즉시 스크롤 초기화
-    window.scrollTo(0, 0);
-    // 추가로 document 요소도 초기화
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    
-    // 모든 스크롤 가능한 요소도 초기화
-    const scrollableElements = document.querySelectorAll('[style*="overflow"], .scrollable, .content');
-    scrollableElements.forEach(element => {
-      if (element instanceof HTMLElement) {
-        element.scrollTop = 0;
-      }
-    });
-  }, [location.pathname, location.search]); // search 파라미터 변경 시에도 스크롤 초기화
+    console.log('인증 상태:', { isAuthenticated, user, pathname: location.pathname });
+  }, [isAuthenticated, user, location.pathname]);
 
-  // 홈 화면 접속 시 How to Use 팝업 표시
+  // 페이지 이동 시 스크롤을 맨 위로 이동 및 로딩 표시
+  useEffect(() => {
+    // 탭 이동 시 로딩 표시 (0.3초 미만이므로 로딩 화면 표시되지 않음)
+    const tabRoutes = ['/dashboard', '/my-garden', '/challenge-achievements'];
+    if (tabRoutes.includes(location.pathname)) {
+      showLoading('페이지를 불러오는 중...');
+      
+      // 짧은 지연 후 로딩 해제 (실제 데이터 로딩 시뮬레이션)
+      const timer = setTimeout(() => {
+        hideLoading();
+      }, 200); // 로딩 시간을 200ms로 단축 (0.3초 미만)
+      
+      return () => clearTimeout(timer);
+    }
+    
+    // 강력한 스크롤 초기화 - 여러 방법으로 확실하게 처리
+    const scrollToTop = () => {
+      // 1. window 스크롤 초기화
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'auto' // 즉시 이동 (부드러운 애니메이션 없음)
+      });
+      
+      // 2. document 요소들 초기화
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      
+      // 3. 모든 스크롤 가능한 요소 초기화
+      const scrollableElements = document.querySelectorAll(
+        '[style*="overflow"], .scrollable, .content, .message-window, .chat-container, main, .auth-container'
+      );
+      scrollableElements.forEach(element => {
+        if (element instanceof HTMLElement) {
+          element.scrollTop = 0;
+          element.scrollLeft = 0;
+        }
+      });
+      
+      // 4. 추가 보장을 위해 약간의 지연 후 다시 실행
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      }, 10);
+    };
+    
+    // 즉시 실행
+    scrollToTop();
+    
+    // 컴포넌트가 마운트된 후에도 한 번 더 실행
+    const timer = setTimeout(scrollToTop, 100);
+    
+    return () => clearTimeout(timer);
+  }, [location.pathname, location.search, showLoading, hideLoading]); // search 파라미터 변경 시에도 스크롤 초기화
+
+  // 홈 화면 접속 시 How to Use 팝업 표시 (사용자별 최초 1회)
   useEffect(() => {
     if (location.pathname === "/" && !isPreview) {
-      const today = new Date().toDateString();
-      const dontShowToday = localStorage.getItem('howto-dont-show-today');
+      const userId = localStorage.getItem('userId') || 'default';
+      const dontShowHowTo = localStorage.getItem(`howto-dont-show-${userId}`);
       
-      if (dontShowToday !== today) {
+      console.log('How to Use 팝업 체크:', { userId, dontShowHowTo, isAuthenticated });
+      
+      if (!dontShowHowTo) {
+        console.log('How to Use 팝업 표시 예정');
         // 1초 후 팝업 표시 (페이지 로딩 완료 후)
         const timer = setTimeout(() => {
+          console.log('How to Use 팝업 표시');
           setShowHowToPopup(true);
         }, 1000);
         
         return () => clearTimeout(timer);
       }
     }
-  }, [location.pathname, isPreview]);
+  }, [location.pathname, isPreview, isAuthenticated]);
+
+  // 로그인/회원가입 후 메인화면으로 이동 시 How to Use 팝업 표시
+  useEffect(() => {
+    if (location.pathname === "/" && !isPreview && isAuthenticated) {
+      const userId = localStorage.getItem('userId') || 'default';
+      const dontShowHowTo = localStorage.getItem(`howto-dont-show-${userId}`);
+      const hasShownAfterLogin = localStorage.getItem(`howto-shown-after-login-${userId}`);
+      
+      console.log('로그인 후 How to Use 팝업 체크:', { userId, dontShowHowTo, hasShownAfterLogin });
+      
+      // 로그인 후 아직 팝업을 보지 않았고, "다시 보지 않기"를 선택하지 않은 경우
+      if (!dontShowHowTo && !hasShownAfterLogin) {
+        console.log('로그인 후 How to Use 팝업 표시 예정');
+        // 1.5초 후 팝업 표시 (로그인 완료 후)
+        const timer = setTimeout(() => {
+          console.log('로그인 후 How to Use 팝업 표시');
+          setShowHowToPopup(true);
+          localStorage.setItem(`howto-shown-after-login-${userId}`, 'true');
+        }, 1500);
+        
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [location.pathname, isPreview, isAuthenticated]);
 
   // 서비스 검색 데이터 ✅ (App 함수 안에만 유지)
   const serviceItems = [
@@ -124,16 +201,17 @@ function AppContent() {
   // 인증 페이지인지 확인
   const isAuthPage = location.pathname === "/login" || location.pathname === "/signup";
   
-  // 인증이 필요한 페이지인지 확인 (홈페이지는 제외)
-  const protectedPages = ["/dashboard", "/chat", "/mygarden", "/credit", "/challenge-achievements", "/user-info"];
+  // 인증이 필요한 페이지인지 확인
+  const protectedPages = ["/home", "/user-info", "/dashboard", "/chat", "/credit", "/mygarden", "/challenge-achievements"];
   const isProtectedPage = protectedPages.includes(location.pathname);
   
   // 인증되지 않은 사용자가 보호된 페이지에 접근하려 할 때 로그인 페이지로 리다이렉트
   useEffect(() => {
     if (!isAuthenticated && isProtectedPage && !isPreview) {
+      console.log('보호된 페이지 접근 시도:', location.pathname);
       navigate('/login');
     }
-  }, [isAuthenticated, isProtectedPage, isPreview, navigate]);
+  }, [isAuthenticated, isProtectedPage, isPreview, navigate, location.pathname]);
 
   // 처음 접속하거나 F5를 눌렀을 때 로그인되지 않은 상태면 로그인 페이지로 이동
   useEffect(() => {
@@ -141,6 +219,7 @@ function AppContent() {
       navigate('/login');
     }
   }, [isAuthenticated, isAuthPage, isPreview, location.pathname, navigate]);
+
 
   return (
     <div className="App">
@@ -152,12 +231,19 @@ function AppContent() {
             <div className="header-left">
               <Link to="/user-info" className="user-info-link">
                 <div className="user-info">
-                  <span className="user-name">{user?.name || '김에코'}</span>
-                  <span className="user-role">{user?.role || '사용자'}</span>
+                  <span className="user-name">{user?.name || 'admin'}</span>
+                  <span className="user-role">ADMIN</span>
                 </div>
               </Link>
             </div>
             <div className="header-right">
+              <button 
+                className="data-manager-btn"
+                onClick={() => setShowDataManager(true)}
+                title="데이터 관리자"
+              >
+                <span className="data-manager-icon">🗄️</span>
+              </button>
               <button 
                 className="logout-btn"
                 onClick={logout}
@@ -173,8 +259,9 @@ function AppContent() {
 
       <main className={!isPreview && !isAuthPage ? "with-sidebar" : ""}>
         <Routes>
+          <Route path="/" element={<Login />} />
           <Route
-            path="/"
+            path="/home"
             element={
               <>
                 {/* How to Use 팝업 */}
@@ -340,6 +427,7 @@ function AppContent() {
           <Route path="/howto" element={<HowTo />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/gardenchat" element={<GardenWithChat />} />
         </Routes>
       </main>
@@ -355,6 +443,16 @@ function AppContent() {
           </div>
         </footer>
       )}
+
+      {/* HowTo 팝업 */}
+      {showHowToPopup && (
+        <HowToPopup isOpen={showHowToPopup} onClose={() => setShowHowToPopup(false)} />
+      )}
+
+      {/* 데이터 관리자 */}
+      {showDataManager && (
+        <DataManager isOpen={showDataManager} onClose={() => setShowDataManager(false)} />
+      )}
     </div>
   );
 }
@@ -365,7 +463,11 @@ function App() {
       <UserProvider>
         <CreditsProvider>
           <GardenProvider>
-            <AppContent />
+            <LoadingProvider>
+              <AppDataProvider>
+                <AppContent />
+              </AppDataProvider>
+            </LoadingProvider>
           </GardenProvider>
         </CreditsProvider>
       </UserProvider>

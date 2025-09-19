@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import json
 
 from backend.database import get_db
-from backend.models import User, CreditsLedger, MobilityLog, UserGarden, GardenWateringLog, GardenLevel
+from ..models import User, CreditsLedger, MobilityLog, UserGarden, GardenWateringLog, GardenLevel
 from backend.schemas import (
     CreditBalance, CreditTransaction, CreditHistory, 
     GardenStatus, WateringRequest, WateringResponse
@@ -460,4 +460,111 @@ async def get_mobility_history(
         }
         for log in logs
     ]
+
+# 챌린지 완료 시 포인트 지급
+@router.post("/challenge/complete")
+async def complete_challenge(
+    user_id: int,
+    challenge_id: str,
+    challenge_type: str,
+    points: int,
+    challenge_name: str,
+    db: Session = Depends(get_db)
+):
+    """챌린지 완료 시 포인트를 지급합니다."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if points <= 0:
+        raise HTTPException(status_code=400, detail="Points must be positive")
+    
+    # 크레딧 장부에 기록
+    credit_entry = CreditsLedger(
+        user_id=user_id,
+        type="EARN",
+        points=points,
+        reason=f"챌린지 완료: {challenge_name}",
+        meta_json={
+            "challenge_id": challenge_id,
+            "challenge_type": challenge_type,
+            "challenge_name": challenge_name
+        }
+    )
+    
+    db.add(credit_entry)
+    db.commit()
+    db.refresh(credit_entry)
+    
+    return {
+        "success": True,
+        "message": f"챌린지 '{challenge_name}' 완료! {points} 포인트를 획득했습니다.",
+        "points_earned": points,
+        "transaction_id": credit_entry.entry_id
+    }
+
+# 활동 완료 시 포인트 지급
+@router.post("/activity/complete")
+async def complete_activity(
+    user_id: int,
+    activity_type: str,
+    distance: float,
+    carbon_saved: float,
+    points: int,
+    route: str,
+    db: Session = Depends(get_db)
+):
+    """활동 완료 시 포인트를 지급합니다."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if points <= 0:
+        raise HTTPException(status_code=400, detail="Points must be positive")
+    
+    # 모빌리티 로그 생성
+    mobility_log = MobilityLog(
+        user_id=user_id,
+        mode=activity_type.upper(),
+        distance_km=distance,
+        started_at=datetime.utcnow() - timedelta(minutes=30),  # 예상 시작 시간
+        ended_at=datetime.utcnow(),
+        co2_saved_g=carbon_saved,
+        points_earned=points,
+        description=f"{activity_type} 활동",
+        start_point=route.split(" → ")[0] if " → " in route else "시작점",
+        end_point=route.split(" → ")[1] if " → " in route else "도착점"
+    )
+    
+    db.add(mobility_log)
+    db.commit()
+    db.refresh(mobility_log)
+    
+    # 크레딧 장부에 기록
+    credit_entry = CreditsLedger(
+        user_id=user_id,
+        ref_log_id=mobility_log.log_id,
+        type="EARN",
+        points=points,
+        reason=f"{activity_type} 활동 완료",
+        meta_json={
+            "activity_type": activity_type,
+            "distance": distance,
+            "carbon_saved": carbon_saved,
+            "route": route
+        }
+    )
+    
+    db.add(credit_entry)
+    db.commit()
+    db.refresh(credit_entry)
+    
+    return {
+        "success": True,
+        "message": f"{activity_type} 활동 완료! {points} 포인트를 획득했습니다.",
+        "points_earned": points,
+        "carbon_saved": carbon_saved,
+        "transaction_id": credit_entry.entry_id,
+        "mobility_log_id": mobility_log.log_id
+    }
 

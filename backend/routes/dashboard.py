@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Dict, Any, List
 from datetime import datetime, timedelta
-from ..database import get_db
 from ..models import User, CreditsLedger, MobilityLog, UserGarden, GardenLevel
 from ..schemas import DashboardStats, DailyStats, WeeklyStats
+from backend.database import get_db
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 

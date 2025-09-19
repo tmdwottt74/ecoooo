@@ -1,6 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import "./Chat.css";
+import { sessionService } from "../services/sessionService";
+import { useLoading } from "../contexts/LoadingContext";
+import { useCredits, getAuthHeaders } from "../contexts/CreditsContext";
+import { useAppData } from "../contexts/AppDataContext";
+import { useAuth } from "../contexts/AuthContext";
+
+/// <reference lib="dom" />
 
 // 메시지 타입
 interface Message {
@@ -8,73 +15,219 @@ interface Message {
   text: string;
 }
 
+// 대시보드 데이터 인터페이스 정의
+interface DashboardData {
+  co2_saved_today: number;
+  total_carbon_reduced: number;
+  total_credits: number;
+  garden_level: number;
+  challenge_goal: number;
+  challenge_progress: number;
+}
+
 const Chat: React.FC = () => {
   const location = useLocation();
   const isPreview = new URLSearchParams(location.search).get("preview") === "1";
+
+  const { creditsData } = useCredits();
+  const { user } = useAuth();
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isListening, setIsListening] = useState<boolean>(false);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 실시간 크레딧 변경 애니메이션
+  const [creditChange, setCreditChange] = useState<{amount: number, type: 'earn' | 'spend' | null}>({amount: 0, type: null});
+  const [showCreditAnimation, setShowCreditAnimation] = useState(false);
+
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const userId = 1; // 예시 사용자 ID
+  const currentUserId = user?.id;
+  const userInfo = { name: user?.name || "김에코" };
 
-  const userInfo = {
-    name: "김에코", // 실제 로그인 사용자명으로 교체 가능
+  // 페이지 진입 시 스크롤을 최상단으로 이동
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  // 자동 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
+  // 크레딧 변경 애니메이션
+  useEffect(() => {
+    const handleCreditUpdate = (event: CustomEvent) => {
+      const { change } = event.detail;
+      if (change !== 0) {
+        setCreditChange({
+          amount: Math.abs(change),
+          type: change > 0 ? 'earn' : 'spend'
+        });
+        setShowCreditAnimation(true);
+        setTimeout(() => {
+          setShowCreditAnimation(false);
+          setCreditChange({amount: 0, type: null});
+        }, 3000);
+      }
+    };
+    window.addEventListener('creditUpdated', handleCreditUpdate as EventListener);
+    return () => window.removeEventListener('creditUpdated', handleCreditUpdate as EventListener);
+  }, []);
+
+  // 저장된 메시지 복원
+  useEffect(() => {
+    const loadSavedMessages = async () => {
+      if (!isPreview) {
+        const savedMessages = await sessionService.getChatMessages();
+        if (savedMessages.length > 0) {
+          setMessages(savedMessages);
+        }
+      }
+    };
+    loadSavedMessages();
+  }, [isPreview]);
+
+  // 메시지 자동 저장
+  useEffect(() => {
+    if (!isPreview && messages.length > 0) {
+      sessionService.saveChatMessages(messages);
+    }
+  }, [messages, isPreview]);
+
+  // 음성 인식
+  const handleVoiceInput = () => {
+    if (!("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
+      alert("죄송합니다. 음성 인식을 지원하지 않는 브라우저입니다.");
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = recognitionRef.current || new SpeechRecognition();
+    recognition.interimResults = true;
+    recognition.lang = "ko-KR";
+    recognition.continuous = true;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      if (timeoutIdRef.current) {
+        clearTimeout(timeoutIdRef.current);
+        timeoutIdRef.current = null;
+      }
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interimTranscript = "";
+      let finalTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript;
+        } else {
+          interimTranscript += transcript;
+        }
+      }
+      setInputValue(finalTranscript || interimTranscript);
+
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+      timeoutIdRef.current = setTimeout(() => {
+        recognition.stop();
+      }, 3000);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error("음성 인식 오류:", event.error);
+      setIsListening(false);
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      if (timeoutIdRef.current) clearTimeout(timeoutIdRef.current);
+      if (inputValue.trim()) handleSendMessage();
+    };
+
+    if (isListening) {
+      recognition.stop();
+      setIsListening(false);
+    } else {
+      recognition.start();
+      recognitionRef.current = recognition;
+    }
   };
 
-  // ✅ 더미 데이터 기반 응답 핸들러
+  // 대시보드 응답
   const handleDashboardReply = async (
     intent: "절약량" | "포인트" | "정원" | "챌린지"
   ) => {
-    const dummyData = {
-      co2_saved_today: 1850, // g
-      total_saved: 18.5, // kg
-      total_points: 1240,
-      garden_level: 3,
-      challenge: { goal: 20, progress: 18.5 }
-    };
-
-    let botText = "";
-
-    if (intent === "절약량") {
-      botText = `오늘은 ${dummyData.co2_saved_today} g CO₂ 절약했고, 누적 절약량은 ${dummyData.total_saved} kg이에요 🌱\n\n💡 탄소 절감 팁:\n• 대중교통 이용하기\n• 자전거 타기\n• 에너지 절약하기\n• 친환경 제품 사용하기`;
-    } else if (intent === "포인트") {
-      botText = `지금까지 총 ${dummyData.total_points} 포인트를 모았어요 💰\n\n🎯 포인트 적립 방법:\n• 지하철 이용: +150P\n• 자전거 이용: +80P\n• 친환경 활동: +100P\n• 에너지 절약: +50P`;
-    } else if (intent === "정원") {
-      botText = `현재 정원 레벨은 Lv.${dummyData.garden_level} 입니다 🌳\n\n🌱 정원 관리 팁:\n• 매일 물주기로 포인트 적립\n• 10번 물주기마다 레벨업\n• 다양한 식물로 정원 꾸미기\n• 친구들과 정원 공유하기`;
-    } else if (intent === "챌린지") {
-      const percent = Math.round((dummyData.challenge.progress / dummyData.challenge.goal) * 100);
-      botText = `🔥 현재 챌린지 진행 상황: 목표 ${dummyData.challenge.goal} kg 중 ${dummyData.challenge.progress} kg 달성 (${percent}%)\n\n🎉 목표까지 ${(dummyData.challenge.goal - dummyData.challenge.progress).toFixed(1)} kg 남았어요!\n\n💪 챌린지 완주를 위한 활동:\n• 대중교통 이용하기\n• 자전거 타기\n• 도보로 이동하기`;
+    if (!currentUserId) {
+      // 로딩 메시지를 에러 메시지로 교체
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        if (newMessages[lastIndex].text === "답변을 생성하는 중...") {
+          newMessages[lastIndex] = { sender: "bot", text: "사용자 정보를 불러올 수 없습니다." };
+        }
+        return newMessages;
+      });
+      setIsLoading(false);
+      return;
     }
 
-    const botMessage: Message = { sender: "bot", text: botText };
-    setMessages((prev) => [...prev, botMessage]);
-  };
+    try {
+      const headers = getAuthHeaders();
+      const response = await fetch(`${API_URL}/api/dashboard/`, {
+        method: "GET",
+        headers: headers,
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error(`HTTP error! ${response.status}`);
+      const actualData: DashboardData = await response.json();
 
-  // ✅ 추천 질문 버튼 클릭
-  const handleQuickSend = (text: string) => {
-    const userMessage: Message = { sender: "user", text };
-    setMessages((prev) => [...prev, userMessage]);
+      let botText = "";
+      if (intent === "절약량") {
+        botText = `오늘은 ${actualData.co2_saved_today} g CO₂ 절약했고, 누적 절약량은 ${actualData.total_carbon_reduced} kg이에요 🌱`;
+      } else if (intent === "포인트") {
+        botText = `지금까지 총 ${actualData.total_credits} 포인트를 모았어요 💰`;
+      } else if (intent === "정원") {
+        botText = `현재 정원 레벨은 Lv.${actualData.garden_level} 입니다 🌳`;
+      } else if (intent === "챌린지") {
+        const percent = Math.round((actualData.challenge_progress / actualData.challenge_goal) * 100);
+        botText = `🔥 챌린지 진행: 목표 ${actualData.challenge_goal} 중 ${actualData.challenge_progress} 달성 (${percent}%)`;
+      }
 
-    if (text.includes("챌린지")) {
-      handleDashboardReply("챌린지");
-    } else if (text.includes("탄소") || text.includes("절약")) {
-      handleDashboardReply("절약량");
-    } else if (text.includes("포인트")) {
-      handleDashboardReply("포인트");
-    } else if (text.includes("정원")) {
-      handleDashboardReply("정원");
-    } else {
-      setMessages((prev) => [
-        ...prev,
-        { sender: "bot", text: "챗봇이 아직 학습 중이에요 🤖" },
-      ]);
+      // 로딩 메시지를 실제 답변으로 교체
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        if (newMessages[lastIndex].text === "답변을 생성하는 중...") {
+          newMessages[lastIndex] = { sender: "bot", text: botText };
+        }
+        return newMessages;
+      });
+    } catch (error) {
+      console.error("Dashboard fetch 실패:", error);
+      // 로딩 메시지를 에러 메시지로 교체
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        if (newMessages[lastIndex].text === "답변을 생성하는 중...") {
+          newMessages[lastIndex] = { sender: "bot", text: "데이터 불러오기 실패" };
+        }
+        return newMessages;
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // ✅ 추천 질문 리스트
+  // 추천 질문
   const recommendedQuestions = [
     "내가 절약한 탄소량은?",
     "내가 모은 포인트는?",
@@ -86,106 +239,63 @@ const Chat: React.FC = () => {
     "환경 친화적인 생활 방법은?",
   ];
 
-  // ✅ 메시지 전송
+  // 메시지 전송
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-
     const userMessage: Message = { sender: "user", text: inputValue };
-    setMessages((prev) => [...prev, userMessage]);
+    const loadingMessage: Message = { sender: "bot", text: "답변을 생성하는 중..." };
+    
+    setMessages((prev) => [...prev, userMessage, loadingMessage]);
     setInputValue("");
     setIsLoading(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       let botResponse = "";
-
       if (inputValue.includes("탄소") || inputValue.includes("절약") || inputValue.includes("CO2")) {
-        handleDashboardReply("절약량");
+        await handleDashboardReply("절약량");
       } else if (inputValue.includes("포인트") || inputValue.includes("크레딧")) {
-        handleDashboardReply("포인트");
+        await handleDashboardReply("포인트");
       } else if (inputValue.includes("정원") || inputValue.includes("식물")) {
-        handleDashboardReply("정원");
+        await handleDashboardReply("정원");
       } else if (inputValue.includes("챌린지") || inputValue.includes("도전")) {
-        handleDashboardReply("챌린지");
-      } else if (inputValue.includes("안녕") || inputValue.includes("hello") || inputValue.includes("hi")) {
-        botResponse = `안녕하세요! ${userInfo.name}님! 🌱\n\n환경 친화적인 생활에 대해 무엇이든 물어보세요. 탄소 절감, 에코 크레딧, 정원 관리 등 다양한 주제로 도움을 드릴게요!`;
-      } else if (inputValue.includes("도움") || inputValue.includes("help")) {
-        botResponse = `🤖 에코 AI 챗봇 도움말\n\n📋 주요 기능:\n• 탄소 절감 상담\n• 에코 크레딧 안내\n• 정원 관리 팁\n• 챌린지 진행 상황\n\n💡 추천 질문:\n• "내가 절약한 탄소량은?"\n• "포인트 적립 방법 알려줘"\n• "정원 레벨 확인해줘"\n• "챌린지 진행 상황은?"`;
-      } else if (inputValue.includes("감사") || inputValue.includes("고마워")) {
-        botResponse = `천만에요! 😊\n\n환경을 위해 함께 노력하는 ${userInfo.name}님을 응원해요! 🌍\n\n더 궁금한 것이 있으면 언제든 물어보세요!`;
+        await handleDashboardReply("챌린지");
       } else {
-        const responses = [
-          "환경 친화적인 생활에 대해 더 구체적으로 물어보시면 도움을 드릴게요! 🌱",
-          "탄소 절감, 에코 크레딧, 정원 관리 등에 대해 궁금한 것이 있으시면 말씀해주세요! 💚",
-          "환경 보호는 작은 실천에서 시작됩니다. 어떤 부분에 대해 알고 싶으신가요? 🌿",
-          "에코 친화적인 생활을 위한 팁이나 정보를 제공해드릴 수 있어요! 무엇이 궁금하신가요? 🌍"
-        ];
-        botResponse = responses[Math.floor(Math.random() * responses.length)];
+        botResponse = "환경 관련 질문을 해주세요 🌱";
       }
-
-      if (botResponse) {
-        setMessages((prev) => [
-          ...prev,
-          { sender: "bot", text: botResponse }
-        ]);
-      }
-
+      
+      // 로딩 메시지를 실제 답변으로 교체
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        if (newMessages[lastIndex].text === "답변을 생성하는 중...") {
+          newMessages[lastIndex] = { sender: "bot", text: botResponse };
+        }
+        return newMessages;
+      });
+      
       setIsLoading(false);
-    }, 1000);
+    }, 300);
   };
 
   // 미리보기 모드
   if (isPreview) {
     return (
       <div className="chat-preview">
-        <div className="preview-header">
-          <h3>🤖 에코 AI 챗봇</h3>
-        </div>
+        <div className="preview-header"><h3>🤖 에코 AI 챗봇</h3></div>
         <div className="preview-status">
-          <div className="status-indicator">
-            <div className="status-dot"></div>
-            <span>온라인</span>
-          </div>
+          <div className="status-indicator"><div className="status-dot"></div><span>온라인</span></div>
         </div>
         <div className="preview-conversation">
-          <div className="preview-message bot">
-            <div className="preview-avatar">🤖</div>
-            <div className="preview-bubble">
-              안녕하세요! 환경 친화적인 생활에 대해 무엇이든 물어보세요.
-            </div>
-          </div>
-          <div className="preview-message user">
-            <div className="preview-bubble">
-              탄소 절감 방법을 알려주세요
-            </div>
-            <div className="preview-avatar">👤</div>
-          </div>
-          <div className="preview-message bot">
-            <div className="preview-avatar">🤖</div>
-            <div className="preview-bubble">
-              대중교통 이용, 자전거 타기, 에너지 절약 등 다양한 방법이 있어요!
-            </div>
-          </div>
-        </div>
-        <div className="preview-features">
-          <div className="feature-item">
-            <span className="feature-icon">🌱</span>
-            <span className="feature-text">탄소 절감 상담</span>
-          </div>
-          <div className="feature-item">
-            <span className="feature-icon">💰</span>
-            <span className="feature-text">에코 크레딧 안내</span>
-          </div>
-          <div className="feature-item">
-            <span className="feature-icon">🌿</span>
-            <span className="feature-text">정원 관리 팁</span>
-          </div>
+          <div className="preview-message bot"><div className="preview-avatar">🤖</div><div className="preview-bubble">안녕하세요! 환경 친화적인 생활에 대해 무엇이든 물어보세요.</div></div>
+          <div className="preview-message user"><div className="preview-bubble">탄소 절감 방법 알려줘</div><div className="preview-avatar">👤</div></div>
+          <div className="preview-message bot"><div className="preview-avatar">🤖</div><div className="preview-bubble">대중교통, 자전거, 에너지 절약이 효과적이에요!</div></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`chat-container ${isPreview ? "is-preview" : ""}`}>
+    <div className="chat-container">
       <div className="chat-header">
         <div className="chat-title">
           <div className="chat-icon">🤖</div>
@@ -194,9 +304,18 @@ const Chat: React.FC = () => {
             <p>환경 친화적인 생활을 위한 AI 어시스턴트</p>
           </div>
         </div>
-        <div className="chat-status">
-          <div className="status-dot"></div>
-          <span>온라인</span>
+        <div className="chat-header-right">
+          <div className="credit-display-container">
+            <div className={`chat-credit-display ${showCreditAnimation ? 'credit-updated' : ''}`}>
+              💰 {creditsData.totalCredits}C
+            </div>
+            {showCreditAnimation && (
+              <div className={`credit-change-animation ${creditChange.type}`}>
+                {creditChange.type === "earn" ? "+" : "-"}{creditChange.amount}
+              </div>
+            )}
+          </div>
+          <div className="chat-status"><div className="status-dot"></div><span>온라인</span></div>
         </div>
       </div>
 
@@ -204,90 +323,61 @@ const Chat: React.FC = () => {
         <div className="welcome-avatar">🌱</div>
         <div className="welcome-content">
           <h4>안녕하세요, {userInfo.name}님!</h4>
-          <p>환경 친화적인 생활에 대해 무엇이든 물어보세요. 탄소 절감, 에코 크레딧, 정원 관리 등 다양한 주제로 도움을 드릴게요.</p>
+          <p>탄소 절감, 에코 크레딧, 정원 관리 등 다양한 주제로 도움을 드릴게요.</p>
         </div>
       </div>
 
       <div className="message-window">
-        {messages.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-icon">💬</div>
-            <h4>대화를 시작해보세요!</h4>
-            <p>아래 추천 질문을 클릭하거나 직접 메시지를 입력해보세요.</p>
-          </div>
-        ) : (
-          messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.sender}`}>
-              <div className="message-avatar">
-                {msg.sender === "user" ? "👤" : "🤖"}
-              </div>
-              <div className="message-content">
-                <div className="message-bubble">
-                  <p style={{ whiteSpace: 'pre-line' }}>{msg.text}</p>
-                </div>
-                <div className="message-time">
-                  {new Date().toLocaleTimeString('ko-KR', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  })}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-
-        {isLoading && (
-          <div className="message bot">
-            <div className="message-avatar">🤖</div>
+        {messages.map((msg, idx) => (
+          <div key={idx} className={`message ${msg.sender}`}>
+            <div className="message-avatar">{msg.sender === "user" ? "👤" : "🤖"}</div>
             <div className="message-content">
-              <div className="message-bubble loading">
-                <div className="typing-indicator">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
+              <div className={`message-bubble ${msg.text === "답변을 생성하는 중..." ? "loading" : ""}`}>
+                <p>{msg.text}</p>
               </div>
+              <div className="message-time">{new Date().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})}</div>
             </div>
           </div>
-        )}
+        ))}
+        <div ref={messagesEndRef}/>
       </div>
 
-      {!isPreview && (
-        <div className="quick-questions-section">
-          <h4>💡 추천 질문</h4>
-          <div className="quick-questions">
-            {recommendedQuestions.map((q, idx) => (
-              <button key={idx} onClick={() => handleQuickSend(q)} className="quick-question-btn">
-                {q}
-              </button>
-            ))}
-          </div>
+      <div className="quick-questions-section">
+        <h4>💡 추천 질문</h4>
+        <div className="quick-questions">
+          {recommendedQuestions.map((q, idx) => (
+            <button key={idx} onClick={() => setInputValue(q)} className="quick-question-btn">{q}</button>
+          ))}
         </div>
-      )}
+      </div>
 
       <div className="input-area">
-  <div className="input-container wide">
-    <input
-      type="text"
-      value={inputValue}
-      onChange={(e) => setInputValue(e.target.value)}
-      onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-      placeholder="메시지를 입력하세요..."
-      className="message-input"
-    />
-    <button 
-      onClick={handleSendMessage} 
-      disabled={isLoading || !inputValue.trim()}
-      className="send-button"
-    >
-      <span>전송</span>
-      <div className="send-icon">📤</div>
-    </button>
-  </div>
-</div>
-
-
-
+        <div className="input-container wide">
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+            placeholder={isListening ? "말씀해주세요..." : "메시지를 입력하세요..."}
+            className="message-input"
+            disabled={isListening}
+          />
+          <button
+            onClick={handleVoiceInput}
+            className={`voice-button ${isListening ? "listening" : ""}`}
+            disabled={isLoading}
+          >
+            {isListening ? "🔴" : "🎤"}
+          </button>
+          <button
+            onClick={handleSendMessage}
+            disabled={isLoading || !inputValue.trim()}
+            className="send-button"
+          >
+            <span>전송</span><div className="send-icon">📤</div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

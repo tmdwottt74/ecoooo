@@ -77,7 +77,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isLoading, setIsLoading] = React.useState(false);
   const { user: authUser } = useAuth();
 
-  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8001";
+  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
   // AuthContext의 사용자 정보가 변경될 때 UserContext 동기화
   useEffect(() => {
@@ -91,6 +91,25 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }));
     }
   }, [authUser]);
+
+  // 컴포넌트 마운트 시 localStorage에서 사용자 정보 불러오기
+  useEffect(() => {
+    const savedUser = localStorage.getItem('eco-user');
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(prev => ({
+          ...prev,
+          name: userData.name,
+          email: userData.email,
+          password: userData.password,
+          phone: userData.phone || prev.phone,
+        }));
+      } catch (error) {
+        console.error('Failed to parse saved user data:', error);
+      }
+    }
+  }, []);
 
   // localStorage에서 크레딧 데이터를 가져와서 UserContext 동기화
   useEffect(() => {

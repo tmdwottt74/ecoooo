@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useUser } from './UserContext'; // Import useUser
 
 interface CreditsData {
   totalCredits: number;
@@ -23,10 +24,18 @@ interface CreditsContextType {
 
 const CreditsContext = createContext<CreditsContextType | undefined>(undefined);
 
-const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8001";
-const USER_ID = "prototype_user"; // 실제로는 로그인된 사용자 ID 사용
+const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
+
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem('access_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
 
 export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useUser(); // Get user from UserContext
   const [creditsData, setCreditsData] = useState<CreditsData>({
     totalCredits: 1240, // 기본값
     totalCarbonReduced: 12.4, // 기본값
@@ -38,6 +47,18 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // 크레딧 데이터 가져오기
   const fetchCreditsData = async () => {
+    if (!user || !user.id) { // Ensure user and user_id exist
+      console.warn("User not logged in or user_id not available. Using demo data.");
+      // 데모 데이터 사용
+      setCreditsData({
+        totalCredits: 1240,
+        totalCarbonReduced: 12.4,
+        recentEarned: 0,
+        lastUpdated: new Date().toISOString(),
+      });
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
@@ -46,23 +67,23 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
       const storedTotal = localStorage.getItem('credits_total');
       const storedUpdate = localStorage.getItem('credits_last_update');
       
-      // 실제 사용자 ID (1번 사용자)
-      const realUserId = 1;
-
       // 크레딧 잔액 가져오기
-      const creditsResponse = await fetch(`${API_URL}/api/credits/balance/${realUserId}`);
-      if (!creditsResponse.ok) throw new Error('Failed to fetch credits');
+      const creditsResponse = await fetch(`${API_URL}/api/credits/balance`, { headers: getAuthHeaders() });
+      if (!creditsResponse.ok) {
+        console.warn('Failed to fetch credits from API, using demo data');
+        throw new Error('Failed to fetch credits');
+      }
       const creditsData = await creditsResponse.json();
 
       // 정원 상태 가져오기
-      const gardenResponse = await fetch(`${API_URL}/api/credits/garden/${realUserId}`);
+      const gardenResponse = await fetch(`${API_URL}/api/credits/garden/${user.id}`, { headers: getAuthHeaders() });
       let gardenData = { total_carbon_reduced: 0 };
       if (gardenResponse.ok) {
         gardenData = await gardenResponse.json();
       }
 
       // 최근 모빌리티 활동 가져오기
-      const mobilityResponse = await fetch(`${API_URL}/api/credits/mobility/${realUserId}?limit=1`);
+      const mobilityResponse = await fetch(`${API_URL}/api/credits/mobility/${user.id}?limit=1`, { headers: getAuthHeaders() });
       let recentEarned = 0;
       if (mobilityResponse.ok) {
         const mobilityData = await mobilityResponse.json();
@@ -100,11 +121,13 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
     } catch (err) {
       console.error('Error fetching credits data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
-      // 오류 시 기본값 사용
-      setCreditsData(prev => ({
-        ...prev,
+      // API 실패 시 데모 데이터 사용
+      setCreditsData({
+        totalCredits: 1240,
+        totalCarbonReduced: 12.4,
+        recentEarned: 0,
         lastUpdated: new Date().toISOString(),
-      }));
+      });
     } finally {
       setIsLoading(false);
     }
@@ -112,17 +135,15 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // 크레딧 업데이트
   const updateCredits = async (newCredits: number) => {
+    if (!user || !user.id) return; // User not logged in
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`${API_URL}/credits/update`, {
+      const response = await fetch(`${API_URL}/api/credits/update`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: USER_ID,
           total_points: newCredits,
         }),
       });
@@ -144,6 +165,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // 크레딧 추가/차감 (양수: 추가, 음수: 차감)
   const addCredits = async (credits: number, reason: string) => {
+    if (!user || !user.id) return; // User not logged in
     try {
       setIsLoading(true);
       setError(null);
@@ -155,11 +177,9 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       const response = await fetch(`${API_URL}/api/credits/add`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: "1", // 실제 사용자 ID
+          user_id: user.id,
           points: credits,
           reason: reason,
         }),
@@ -202,17 +222,16 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // 정원 물주기
   const waterGarden = async (pointsSpent: number) => {
+    if (!user || !user.id) return { success: false, message: "User not logged in" }; // User not logged in
     try {
       setIsLoading(true);
       setError(null);
 
       const response = await fetch(`${API_URL}/api/credits/garden/water`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: 1, // 실제 사용자 ID
+          user_id: user.id,
           points_spent: pointsSpent,
         }),
       });
@@ -224,21 +243,8 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       const result = await response.json();
       
-      // 성공 시 즉시 로컬 상태 업데이트
-      const newTotal = creditsData.totalCredits - pointsSpent;
-      setCreditsData(prev => ({
-        ...prev,
-        totalCredits: newTotal,
-        lastUpdated: new Date().toISOString(),
-      }));
-
-      // localStorage에 저장하여 다른 컴포넌트에서 사용할 수 있도록 함
-      localStorage.setItem('credits_total', newTotal.toString());
-      localStorage.setItem('credits_last_update', new Date().toISOString());
-      
-      // 서버 데이터와 동기화 (하지만 로컬 상태 우선)
-      // setTimeout을 제거하여 즉시 서버에서 데이터를 가져오지 않도록 함
-      // 대신 localStorage를 통해 다른 탭과 동기화
+      // 성공 후 서버에서 최신 크레딧 데이터를 다시 가져와 동기화합니다.
+      await fetchCreditsData();
       
       return { success: true, message: result.message || '정원에 물을 주었습니다!' };
     } catch (err) {
@@ -253,8 +259,11 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // 크레딧 내역 조회
   const getCreditsHistory = async () => {
+    if (!user || !user.id) return []; // User not logged in
     try {
-      const response = await fetch(`${API_URL}/api/credits/history/1?limit=50`);
+      const response = await fetch(`${API_URL}/api/credits/history/${user.id}?limit=50`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) throw new Error('Failed to fetch credits history');
       
       const history = await response.json();
@@ -276,14 +285,12 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
     points: number, 
     challengeName: string
   ): Promise<void> => {
+    if (!user || !user.id) return; // User not logged in
     try {
       const response = await fetch(`${API_URL}/api/credits/challenge/complete`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: 1,
           challenge_id: challengeId,
           challenge_type: challengeType,
           points: points,
@@ -312,14 +319,12 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
     points: number,
     route: string
   ): Promise<void> => {
+    if (!user || !user.id) return; // User not logged in
     try {
       const response = await fetch(`${API_URL}/api/credits/activity/complete`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
-          user_id: 1,
           activity_type: activityType,
           distance: distance,
           carbon_saved: carbonSaved,
@@ -343,6 +348,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   // 챌린지 진행상황 업데이트
   const updateChallengeProgress = async (activity: string) => {
+    if (!user || !user.id) return; // User not logged in
     try {
       // 활동에 따른 탄소 절감량 계산 (kg 단위)
       let carbonReduced = 0;
@@ -398,7 +404,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
   // 컴포넌트 마운트 시 데이터 가져오기
   useEffect(() => {
     fetchCreditsData();
-  }, []);
+  }, [user?.id, fetchCreditsData]); // user.id가 변경될 때마다 데이터 다시 가져오기
 
   // localStorage 변경 감지 (다른 탭에서의 크레딧 변경)
   useEffect(() => {
@@ -417,7 +423,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [user?.id, fetchCreditsData]); // user.id가 변경될 때마다 리스너 재등록
 
   // 주기적으로 데이터 새로고침 (5분마다로 변경하여 초기화 문제 방지)
   useEffect(() => {
@@ -441,7 +447,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
     }, 5 * 60 * 1000); // 5분
 
     return () => clearInterval(interval);
-  }, []);
+  }, [user?.id, fetchCreditsData]); // user.id가 변경될 때마다 인터벌 재등록
 
   const value: CreditsContextType = {
     creditsData,
@@ -471,3 +477,4 @@ export const useCredits = (): CreditsContextType => {
   }
   return context;
 };
+

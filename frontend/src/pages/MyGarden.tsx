@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useCredits } from "../contexts/CreditsContext";
+import { useUser } from "../contexts/UserContext";
+import { useAppData } from "../contexts/AppDataContext";
+import { useLoading } from "../contexts/LoadingContext";
+import { sessionService } from "../services/sessionService";
+import { creditService } from "../services/creditService";
 import PageHeader from "../components/PageHeader";
+import { getAuthHeaders } from "../contexts/CreditsContext";
 import "./MyGarden.css";
 
 // 🌿 레벨별 이미지 (public/0.png ~ public/10.png)
@@ -9,21 +15,21 @@ const levelImages: string[] = Array.from({ length: 11 }, (_, i) => `/${i}.png`);
 // 💧 물주기 비용 및 단계 설정
 const WATER_COST = 10;
 const WATERS_PER_STAGE = 10;
-const ALLOW_FREE_WATER_WHEN_NO_CREDIT = true;
 
 // 🌱 Garden 데이터 타입
-interface GardenData {
-  totalCarbonReduced: number;
-  ecoPoints: number;
+interface GardenStatus {
+  level_number: number;
+  level_name: string;
+  waters_count: number;
+  required_waters: number;
 }
 
-// ecoPoints → 초기 단계 변환
-const getStageFromPoints = (ecoPoints: number): number => {
-  if (ecoPoints < 100) return 0; 
-  if (ecoPoints < 200) return 1; 
-  if (ecoPoints < 300) return 2; 
-  return 3; 
-};
+// 🌿 정원 진행상황 저장 타입
+interface GardenProgress {
+  stage: number;
+  waterCount: number;
+  lastUpdated: string;
+}
 
 // 레벨 → 텍스트
 const levelNames: string[] = [
@@ -43,143 +49,210 @@ const getPlantStage = (level: number): string =>
   levelNames[Math.min(Math.max(level - 1, 0), levelNames.length - 1)];
 
 const MyGarden: React.FC = () => {
-  const { creditsData, addCredits, waterGarden } = useCredits();
-  const [gardenData, setGardenData] = useState<GardenData>({
-    totalCarbonReduced: creditsData.totalCarbonReduced,
-    ecoPoints: creditsData.totalCredits,
-  });
-  const [loading, setLoading] = useState(true);
-  const [isPreview, setIsPreview] = useState(false);
+  const { creditsData, refreshCredits } = useCredits();
+  const { user } = useUser();
+  const { refreshAllData } = useAppData();
+  const { showLoading } = useLoading();
 
-  const [stage, setStage] = useState(0);
-  const [waterCount, setWaterCount] = useState(0);
+  const [gardenStatus, setGardenStatus] = useState<GardenStatus | null>(null);
+  const [loading, setLoading] = useState(false);
   const [animate, setAnimate] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+
+  const [isPreview, setIsPreview] = useState(false);
+
+  // 진행상황 저장 함수
+  const saveGardenProgress = async (currentStage: number, currentWaterCount: number) => {
+    const progress: GardenProgress = {
+      stage: currentStage,
+      waterCount: currentWaterCount,
+      lastUpdated: new Date().toISOString(),
+    };
+    try {
+      await sessionService.saveSessionState("garden_progress", progress);
+    } catch (error) {
+      console.error("정원 진행상황 저장 실패:", error);
+    }
+  };
+
+  // 진행상황 복원 함수
+  const loadGardenProgress = async (): Promise<GardenProgress | null> => {
+    try {
+      const progress = await sessionService.getSessionState("garden_progress");
+      if (progress) return progress as GardenProgress;
+    } catch (error) {
+      console.error("정원 진행상황 복원 실패:", error);
+    }
+    return null;
+  };
+
+  // 정원 데이터 불러오기
+  const fetchGardenData = async () => {
+    setLoading(true);
+    if (!user || !user.id) {
+      setStatusMessage("사용자 정보를 불러올 수 없습니다.");
+      setLoading(false);
+      return;
+    }
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:8000/api/credits/garden/${user.id}`,
+        { headers: getAuthHeaders() }
+      );
+      if (!response.ok) throw new Error("Failed to fetch garden data");
+      const data = await response.json();
+      setGardenStatus(data);
+
+      // 진행상황 저장
+      await saveGardenProgress(data.level_number, data.waters_count);
+    } catch (error) {
+      console.error("Error fetching garden data:", error);
+      setStatusMessage("정원 정보를 불러오는 데 실패했습니다. (데모 데이터 사용)");
+
+      // 데모 데이터 fallback
+      const demo: GardenStatus = {
+        level_number: 3,
+        level_name: "새싹 단계 🌱",
+        waters_count: 4,
+        required_waters: WATERS_PER_STAGE,
+      };
+      setGardenStatus(demo);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // 페이지 진입 시 스크롤을 최상단으로 이동
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
 
   useEffect(() => {
     // 미리보기 모드 확인
     const urlParams = new URLSearchParams(window.location.search);
-    const previewMode = urlParams.get('preview') === '1';
-    setIsPreview(previewMode);
+    setIsPreview(urlParams.get("preview") === "1");
 
-    const fetchGardenData = async () => {
+    // 저장된 진행상황 복원 우선
+    const init = async () => {
       try {
-        const response = await fetch(
-          "http://127.0.0.1:8001/garden/prototype_user"
-        );
-        const data = await response.json();
-        setGardenData({
-          totalCarbonReduced: data.total_carbon_reduced,
-          ecoPoints: data.total_points,
-        });
-
-        const initialStage = getStageFromPoints(data.total_points);
-        setStage(initialStage);
+        const saved = await loadGardenProgress();
+        if (saved) {
+          setGardenStatus({
+            level_number: saved.stage,
+            level_name: getPlantStage(saved.stage),
+            waters_count: saved.waterCount,
+            required_waters: WATERS_PER_STAGE,
+          });
+          setLoading(false);
+        } else {
+          fetchGardenData();
+        }
       } catch (error) {
-        console.error("Error fetching garden data:", error);
-        // 오류 시 CreditsContext 데이터 사용
-        setGardenData({
-          totalCarbonReduced: creditsData.totalCarbonReduced,
-          ecoPoints: creditsData.totalCredits,
+        console.error("Error loading garden progress:", error);
+        // 오류 발생 시 데모 데이터로 fallback
+        setGardenStatus({
+          level_number: 3,
+          level_name: "새싹 단계 🌱",
+          waters_count: 4,
+          required_waters: WATERS_PER_STAGE,
         });
-        const initialStage = getStageFromPoints(creditsData.totalCredits);
-        setStage(initialStage);
-      } finally {
         setLoading(false);
       }
     };
-
-    fetchGardenData();
-  }, []); // 의존성 배열에서 creditsData 제거하여 무한 루프 방지
-
-  // 크레딧 데이터가 변경될 때마다 gardenData 업데이트
-  useEffect(() => {
-    setGardenData(prev => ({
-      ...prev,
-      totalCarbonReduced: creditsData.totalCarbonReduced,
-      ecoPoints: creditsData.totalCredits,
-    }));
-    
-    // 크레딧 변경 시 단계도 업데이트
-    const newStage = getStageFromPoints(creditsData.totalCredits);
-    setStage(newStage);
-  }, [creditsData.totalCredits, creditsData.totalCarbonReduced]);
+    init();
+  }, [user, fetchGardenData]);
 
   const handleWater = async () => {
+    if (!gardenStatus) return;
+
+    if (creditsData.totalCredits < WATER_COST) {
+      setStatusMessage("크레딧이 부족합니다!");
+      return;
+    }
+
     setAnimate(true);
     setTimeout(() => setAnimate(false), 500);
 
     try {
-      // 새로운 waterGarden API 사용
-      const result = await waterGarden(WATER_COST);
-      
+      // creditService + waterGarden 병행
+      const result = await creditService.waterGarden(WATER_COST);
       if (result.success) {
         setStatusMessage(`물주기 완료! -${WATER_COST}C`);
-        
-        const newCount = waterCount + 1;
 
-        if (newCount >= WATERS_PER_STAGE) {
-          if (stage >= 10) {
-            setStatusMessage("최고 단계에 도달했습니다 🎉");
-            setWaterCount(WATERS_PER_STAGE);
-          } else {
-            setStatusMessage("다음 단계로 넘어가요! 🌱");
-            setStage((s) => Math.min(s + 1, 10));
-            setWaterCount(0);
-          }
-        } else {
-          setWaterCount(newCount);
-          setStatusMessage(`물주기 완료! (${newCount}/${WATERS_PER_STAGE})`);
-        }
+        await Promise.all([fetchGardenData(), refreshCredits(), refreshAllData()]);
       } else {
         setStatusMessage(result.message || "물주기에 실패했습니다.");
       }
     } catch (error) {
       console.error("물주기 실패:", error);
       setStatusMessage("물주기에 실패했습니다.");
+      // 실패 시 복구
+      const saved = await loadGardenProgress();
+      if (saved) {
+        setGardenStatus({
+          level_number: saved.stage,
+          level_name: getPlantStage(saved.stage),
+          waters_count: saved.waterCount,
+          required_waters: WATERS_PER_STAGE,
+        });
+      }
     }
   };
 
+  // 로딩 화면
   if (loading) {
-    return <div className="garden-card">불러오는 중...</div>;
+    showLoading("정원 정보를 불러오는 중...");
+    return null;
   }
 
-  const plantStage = getPlantStage(stage + 1);
-  const weatherClass =
-    gardenData.totalCarbonReduced > 1000 ? "weather-sunny" : "weather-rainy";
+  if (!gardenStatus) {
+    return (
+      <div className="garden-card">
+        <div style={{ textAlign: "center", padding: "3rem" }}>
+          정원 정보를 불러올 수 없습니다.
+        </div>
+      </div>
+    );
+  }
 
-  // 미리보기 모드일 때 간소화된 디자인
+  const { level_number, waters_count, required_waters } = gardenStatus;
+  const plantStage = getPlantStage(level_number);
+  const progressPercentage = (waters_count / required_waters) * 100;
+
+  // 미리보기 모드
   if (isPreview) {
     return (
       <div className="garden-preview-card">
         <div className="preview-header">
           <h3>🌿 나만의 정원</h3>
           <div className="preview-stats">
-            <span className="stat-item">C {gardenData.ecoPoints}</span>
-            <span className="stat-item">Lv.{stage + 1}</span>
+            <span className="stat-item">C {creditsData.totalCredits}</span>
+            <span className="stat-item">Lv.{level_number}</span>
           </div>
         </div>
-        
         <div className="preview-garden">
           <img
-            src={levelImages[Math.min(stage, levelImages.length - 1)]}
-            alt={getPlantStage(stage + 1)}
+            src={levelImages[Math.min(level_number - 1, levelImages.length - 1)]}
+            alt={plantStage}
             className="preview-plant"
           />
         </div>
-        
         <div className="preview-info">
           <p className="preview-stage">{plantStage}</p>
-          <p className="preview-carbon">탄소 절감: {gardenData.totalCarbonReduced}kg</p>
+          <p className="preview-carbon">
+            탄소 절감: {creditsData.totalCarbonReduced.toFixed(2)}kg
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`garden-card ${weatherClass}`}>
-      <PageHeader 
-        title="나만의 정원" 
+    <div className="garden-card">
+      <PageHeader
+        title="나만의 정원"
         subtitle="크레딧으로 가상 정원을 꾸며보세요"
         icon="🌿"
       />
@@ -187,49 +260,67 @@ const MyGarden: React.FC = () => {
       <div className="garden-content">
         {/* 상단 요약 칩 */}
         <div className="garden-chips">
-        <span className="chip chip-credits">C {gardenData.ecoPoints}</span>
-        <span className="chip chip-stage">{plantStage}</span>
-        <span className="chip chip-level">Lv.{stage + 1}</span>
-      </div>
-
-      {/* 현재 단계 이미지 */}
-      <div className="garden-container">
-        <div className="garden-stage">
-          <img
-            src={levelImages[Math.min(stage, levelImages.length - 1)]}
-            alt={getPlantStage(stage + 1)}
-            className={animate ? "plant animate" : "plant"}
-          />
+          <span className="chip chip-credits">
+            C {creditsData.totalCredits.toLocaleString()}
+          </span>
+          <span className="chip chip-stage">{plantStage}</span>
+          <span className="chip chip-level">Lv.{level_number}</span>
         </div>
-        <button onClick={handleWater} className="water-btn">
-          💧 물 주기 ({waterCount}/{WATERS_PER_STAGE}) — -{WATER_COST}C
-        </button>
-      </div>
 
-      {/* 데이터 표시 */}
-      <p className="garden-stats">
-        총 탄소 절감량: {gardenData.totalCarbonReduced} kg
-      </p>
+        {/* 현재 단계 이미지 */}
+        <div className="garden-container">
+          <div className="garden-stage">
+            <img
+              src={levelImages[Math.min(level_number - 1, levelImages.length - 1)]}
+              alt={plantStage}
+              className={animate ? "plant animate" : "plant"}
+            />
+          </div>
+          <button
+            onClick={handleWater}
+            className="water-btn"
+            disabled={creditsData.totalCredits < WATER_COST}
+          >
+            💧 물 주기 ({waters_count}/{required_waters}) — -{WATER_COST}C
+          </button>
+        </div>
 
-      <p className="garden-message">
-        {statusMessage ||
-          (stage >= 10 && waterCount >= WATERS_PER_STAGE
-            ? "최고 단계에 도달했습니다 🎉"
-            : `물주기 완료! (${waterCount}/${WATERS_PER_STAGE})`)}
-      </p>
-      
-      {/* 진행상황 바 */}
-      <div className="progress-container">
-        <div className="progress-bar">
-          <div 
-            className="progress-fill"
-            style={{ width: `${(waterCount / WATERS_PER_STAGE) * 100}%` }}
-          ></div>
+        {/* 데이터 표시 */}
+        <div className="garden-stats">
+          총 탄소 절감량: {creditsData.totalCarbonReduced.toFixed(2)} kg
         </div>
-        <div className="progress-text">
-          {waterCount}/{WATERS_PER_STAGE} 단계 진행중
+
+        {statusMessage && (
+          <div
+            className={`garden-message ${
+              statusMessage.includes("실패") || statusMessage.includes("부족")
+                ? "error"
+                : "success"
+            }`}
+          >
+            {statusMessage}
+          </div>
+        )}
+
+        {/* 진행상황 바 */}
+        <div className="progress-container">
+          <div className="progress-bar">
+            <div
+              className="progress-fill"
+              style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+            />
+          </div>
+          <div className="progress-text">
+            {waters_count}/{required_waters} 단계 진행중 ({progressPercentage.toFixed(0)}%)
+          </div>
         </div>
-      </div>
+
+        {/* 다음 레벨까지 남은 물주기 횟수 표시 */}
+        {required_waters - waters_count > 0 && (
+          <div className="next-level-info">
+            다음 레벨까지 {required_waters - waters_count}번의 물주기가 필요합니다.
+          </div>
+        )}
       </div>
     </div>
   );

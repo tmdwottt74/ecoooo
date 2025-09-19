@@ -3,6 +3,9 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
+# --------------------------
+# ENUM 정의 (모든 Enum을 여기에 모음)
+# --------------------------
 class CreditType(str, Enum):
     EARN = "EARN"
     SPEND = "SPEND"
@@ -14,10 +17,19 @@ class TransportMode(str, Enum):
     BIKE = "BIKE"
     WALK = "WALK"
     CAR = "CAR"
+    ANY = "ANY" # Added for challenge target mode
+
+class ChallengeScope(str, Enum):
+    PERSONAL = "PERSONAL"
+    GROUP = "GROUP"
 
 class GardenStatusEnum(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
+
+# --------------------------
+# 스키마 정의 (BaseModel 클래스)
+# --------------------------
 
 # 크레딧 관련 스키마
 class CreditBalance(BaseModel):
@@ -25,6 +37,8 @@ class CreditBalance(BaseModel):
     total_points: int
     recent_earned: int
     last_updated: datetime
+    class Config:
+        from_attributes = True
 
 class CreditTransaction(BaseModel):
     entry_id: int
@@ -33,11 +47,15 @@ class CreditTransaction(BaseModel):
     reason: str
     created_at: datetime
     meta: Optional[Dict[str, Any]] = None
+    class Config:
+        from_attributes = True
 
 class CreditHistory(BaseModel):
     user_id: int
     transactions: List[CreditTransaction]
     total_count: int
+    class Config:
+        from_attributes = True
 
 # 정원 관련 스키마
 class GardenStatus(BaseModel):
@@ -49,6 +67,8 @@ class GardenStatus(BaseModel):
     total_waters: int
     required_waters: int
     status: GardenStatusEnum
+    class Config:
+        from_attributes = True
 
 class WateringRequest(BaseModel):
     user_id: int
@@ -63,15 +83,34 @@ class WateringResponse(BaseModel):
     new_level: Optional[str] = None
     points_spent: int
     remaining_points: int
+    class Config:
+        from_attributes = True
 
 # 대시보드 관련 스키마
+class DailySaving(BaseModel):
+    date: str
+    saved_g: float
+
+class ModeStat(BaseModel):
+    mode: str
+    saved_g: float
+
+class ChallengeStat(BaseModel):
+    goal: float
+    progress: float
+
 class DashboardStats(BaseModel):
     user_id: int
-    total_points: int
-    total_co2_saved: float
-    recent_activities: int
+    co2_saved_today: float
+    eco_credits_earned: int
     garden_level: int
-    garden_progress: int
+    total_saved: float
+    total_points: int
+    last7days: List[DailySaving]
+    modeStats: List[ModeStat]
+    challenge: ChallengeStat
+    class Config:
+        from_attributes = True
 
 class MobilityLog(BaseModel):
     log_id: int
@@ -81,6 +120,16 @@ class MobilityLog(BaseModel):
     ended_at: datetime
     co2_saved_g: float
     points_earned: int
+    description: Optional[str] = None
+    start_point: Optional[str] = None
+    end_point: Optional[str] = None
+
+class MobilityLogCreate(BaseModel):
+    user_id: int
+    mode: TransportMode
+    distance_km: float
+    started_at: datetime
+    ended_at: datetime
     description: Optional[str] = None
     start_point: Optional[str] = None
     end_point: Optional[str] = None
@@ -95,6 +144,7 @@ class Challenge(BaseModel):
     target_saved_g: int
     start_at: datetime
     end_at: datetime
+    reward: Optional[str] = None # Added reward field
     created_by: Optional[int] = None
     created_at: datetime
 
@@ -102,6 +152,38 @@ class ChallengeMember(BaseModel):
     challenge_id: int
     user_id: int
     joined_at: datetime
+
+class ChallengeBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    scope: ChallengeScope
+    target_mode: TransportMode
+    target_saved_g: int
+    start_at: datetime
+    end_at: datetime
+    reward: Optional[str] = None
+
+class ChallengeCreate(ChallengeBase):
+    created_by: Optional[int] = None
+
+class FrontendChallenge(BaseModel):
+    id: int
+    title: str
+    description: Optional[str] = None
+    progress: int # Percentage
+    reward: Optional[str] = None
+    is_joined: bool # New field
+
+class ChallengeRecommendationRequest(BaseModel):
+    user_id: int
+    title: str
+    description: Optional[str] = None
+    scope: ChallengeScope
+    target_mode: TransportMode
+    target_saved_g: int
+    start_at: datetime
+    end_at: datetime
+    reward: Optional[str] = None
 
 # 업적 관련 스키마
 class Achievement(BaseModel):
@@ -134,12 +216,48 @@ class User(BaseModel):
     role: str
     created_at: datetime
 
+class UserRead(User):
+    class Config:
+        from_attributes = True 
+        exclude = {"password_hash"}
+
+class UserCreate(BaseModel):
+    username: str
+    email: Optional[str] = None
+    password_hash: str
+    role: Optional[str] = None
+    user_group_id: Optional[int] = None
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user_id: int
+    username: str
+    role: str
+
+class TokenData(BaseModel):
+    user_id: Optional[int] = None
+
 class UserGroup(BaseModel):
     group_id: int
     group_name: str
     group_type: str
     region_code: Optional[str] = None
     created_at: datetime
+
+class UserGroupCreate(BaseModel):
+    group_name: str
+    group_type: Optional[str] = None
+    region_code: Optional[str] = None
+
+class UserContext(BaseModel):
+    username: str
+    group_name: Optional[str] = None
+    group_type: Optional[str] = None
 
 # 탄소 배출 계수 스키마
 class CarbonFactor(BaseModel):
@@ -181,3 +299,29 @@ class ErrorResponse(BaseModel):
     success: bool = False
     error: str
     detail: Optional[str] = None
+
+class AddPointsRequest(BaseModel):
+    user_id: int
+    points: int
+    reason: str
+
+# 세션 상태 관련 스키마
+class SessionStateCreate(BaseModel):
+    session_data: Dict[str, Any]
+
+class SessionStateUpdate(BaseModel):
+    session_data: Dict[str, Any]
+
+class SessionStateResponse(BaseModel):
+    session_key: str
+    data: Optional[Dict[str, Any]] = None
+    updated_at: Optional[datetime] = None
+
+class ChatMessage(BaseModel):
+    sender: str  # "user" or "bot"
+    text: str
+    timestamp: Optional[datetime] = None
+
+class ChatSession(BaseModel):
+    messages: List[ChatMessage]
+    last_updated: datetime

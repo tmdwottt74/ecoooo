@@ -9,7 +9,7 @@ import './UserInfo.css';
 const UserInfo: React.FC = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { user, updateUser, fetchTransportAnalysis, isLoading } = useUser();
+  const { user, updateUser, fetchTransportAnalysis } = useUser();
   const { creditsData } = useCredits();
   const [isEditing, setIsEditing] = useState(false);
   const [userData, setUserData] = useState(user);
@@ -21,6 +21,23 @@ const UserInfo: React.FC = () => {
   // user 데이터가 변경될 때마다 userData 업데이트
   useEffect(() => {
     setUserData(user);
+    
+    // localStorage에서 알림설정 불러오기
+    const savedNotifications = localStorage.getItem('notification-settings');
+    if (savedNotifications) {
+      try {
+        const notifications = JSON.parse(savedNotifications);
+        setUserData(prev => ({
+          ...prev,
+          notifications: {
+            ...prev.notifications,
+            ...notifications
+          }
+        }));
+      } catch (error) {
+        console.error('Failed to parse notification settings:', error);
+      }
+    }
   }, [user]);
 
   // 컴포넌트 마운트 시 교통수단 분석 데이터 가져오기
@@ -36,6 +53,9 @@ const UserInfo: React.FC = () => {
   const handleSave = () => {
     setUserData(editData);
     
+    // UserContext의 사용자 정보도 업데이트
+    updateUser(editData);
+    
     // AuthContext의 사용자 정보도 업데이트
     const updatedAuthUser = {
       id: '1',
@@ -49,6 +69,10 @@ const UserInfo: React.FC = () => {
     // localStorage에 업데이트된 사용자 정보 저장
     localStorage.setItem('eco-user', JSON.stringify(updatedAuthUser));
     
+    // 알림설정도 localStorage에 저장
+    localStorage.setItem('notification-settings', JSON.stringify(editData.notifications));
+    
+    alert('정보가 성공적으로 수정되었습니다! ✅');
     setIsEditing(false);
   };
 
@@ -65,13 +89,34 @@ const UserInfo: React.FC = () => {
   };
 
   const handleNotificationChange = (type: string, checked: boolean) => {
-    setEditData(prev => ({
-      ...prev,
-      notifications: {
-        ...prev.notifications,
+    if (isEditing) {
+      setEditData(prev => ({
+        ...prev,
+        notifications: {
+          ...prev.notifications,
+          [type]: checked
+        }
+      }));
+    } else {
+      // 수정 모드가 아닐 때는 바로 저장
+      const updatedNotifications = {
+        ...userData.notifications,
         [type]: checked
-      }
-    }));
+      };
+      
+      setUserData(prev => ({
+        ...prev,
+        notifications: updatedNotifications
+      }));
+      
+      // localStorage에 즉시 저장
+      localStorage.setItem('notification-settings', JSON.stringify(updatedNotifications));
+      
+      // UserContext도 업데이트
+      updateUser({ notifications: updatedNotifications });
+      
+      alert(`${type === 'email' ? '이메일' : type === 'push' ? '푸시' : 'SMS'} 알림이 ${checked ? '활성화' : '비활성화'}되었습니다! 🔔`);
+    }
   };
 
   const handleTransportClick = () => {
@@ -100,16 +145,13 @@ const UserInfo: React.FC = () => {
 
       let response;
       let filename;
-      let mimeType;
 
       if (format === 'pdf') {
         response = await fetch('http://127.0.0.1:8001/api/export/activity-report/1');
         filename = `eco_activity_report_${new Date().toISOString().split('T')[0]}.pdf`;
-        mimeType = 'application/pdf';
       } else {
         response = await fetch('http://127.0.0.1:8001/api/export/activity-summary/1');
         filename = `eco_activity_summary_${new Date().toISOString().split('T')[0]}.json`;
-        mimeType = 'application/json';
       }
       
       if (!response.ok) {
@@ -320,7 +362,6 @@ const UserInfo: React.FC = () => {
                       type="checkbox"
                       checked={isEditing ? editData.notifications.email : userData.notifications.email}
                       onChange={(e) => handleNotificationChange('email', e.target.checked)}
-                      disabled={!isEditing}
                     />
                     <span className="notification-text">이메일 알림</span>
                   </label>
@@ -331,7 +372,6 @@ const UserInfo: React.FC = () => {
                       type="checkbox"
                       checked={isEditing ? editData.notifications.push : userData.notifications.push}
                       onChange={(e) => handleNotificationChange('push', e.target.checked)}
-                      disabled={!isEditing}
                     />
                     <span className="notification-text">푸시 알림</span>
                   </label>
@@ -342,7 +382,6 @@ const UserInfo: React.FC = () => {
                       type="checkbox"
                       checked={isEditing ? editData.notifications.sms : userData.notifications.sms}
                       onChange={(e) => handleNotificationChange('sms', e.target.checked)}
-                      disabled={!isEditing}
                     />
                     <span className="notification-text">SMS 알림</span>
                   </label>
@@ -379,7 +418,7 @@ const UserInfo: React.FC = () => {
         {isEditing && (
           <div className="edit-actions">
             <button className="save-btn" onClick={handleSave}>
-              💾 저장
+              ✅ 확인
             </button>
             <button className="cancel-btn" onClick={handleCancel}>
               ❌ 취소

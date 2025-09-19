@@ -7,6 +7,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import relationship
 
+# database.py에서 Base를 import (순환참조 해결)
 from .database import Base  # Declarative Base
 
 
@@ -35,6 +36,17 @@ class CreditType(str, enum.Enum):
     EARN = "EARN"
     SPEND = "SPEND"
     ADJUST = "ADJUST"
+
+class ChatLog(Base):
+    __tablename__ = "chat_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"))
+    user_message = Column(String(500))
+    bot_response = Column(String(1000))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="chat_logs")
 
 class ChallengeScope(str, enum.Enum):
     PERSONAL = "PERSONAL"
@@ -74,10 +86,11 @@ class User(Base):
     email = Column(String(120), unique=True)
     password_hash = Column(String(255))
     user_group_id = Column(BigInteger, ForeignKey("user_groups.group_id"))
-    role = Column(Enum(UserRole), default=UserRole.USER)
+    role = Column(Enum(UserRole, name = "user_role"), default=UserRole.USER)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
+    chat_logs = relationship("ChatLog", back_populates="user")
     group = relationship("UserGroup", backref="users")
     mobility_logs = relationship("MobilityLog", backref="user")
     credits = relationship("CreditsLedger", backref="user")
@@ -167,6 +180,7 @@ class Challenge(Base):
     target_saved_g = Column(Integer, nullable=False)
     start_at = Column(DateTime, nullable=False)
     end_at = Column(DateTime, nullable=False)
+    reward = Column(String(255), nullable=True) # Add reward field
     created_by = Column(BigInteger, ForeignKey("users.user_id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     
@@ -258,7 +272,7 @@ class GardenLevel(Base):
     description = Column(String(255))
     
     # Relationships
-    gardens = relationship("UserGarden", backref="level")
+    gardens = relationship("UserGarden", back_populates="level")
 
 class UserGarden(Base):
     __tablename__ = "user_gardens"
@@ -273,6 +287,7 @@ class UserGarden(Base):
     
     # Relationships
     watering_logs = relationship("GardenWateringLog", backref="garden")
+    level = relationship("GardenLevel", back_populates="gardens")
 
 class GardenWateringLog(Base):
     __tablename__ = "garden_watering_logs"
@@ -285,3 +300,17 @@ class GardenWateringLog(Base):
     
     # Relationships
     user = relationship("User", backref="watering_logs")
+
+# User Session State
+class UserSessionState(Base):
+    __tablename__ = "user_session_states"
+    
+    state_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, ForeignKey("users.user_id"), nullable=False)
+    session_key = Column(String(100), nullable=False)  # e.g., 'chat_messages', 'active_tab'
+    session_data = Column(JSON, nullable=False)  # JSON 형태로 상태 데이터 저장
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", backref="session_states")

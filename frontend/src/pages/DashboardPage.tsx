@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useCredits } from "../contexts/CreditsContext";
+import { useAppData } from "../contexts/AppDataContext";
+import { useLoading } from "../contexts/LoadingContext";
 import { Link } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 import "../App.css";
@@ -29,13 +31,13 @@ interface DashboardData {
 
 const COLORS = ["#1abc9c", "#16a085", "#f39c12", "#e74c3c"];
 
-// ✅ 통합된 더미 데이터
-const UNIFIED_DATA: DashboardData = {
+// ✅ 데모 버전 - 모든 사용자가 동일한 데이터
+const DEMO_DATA: DashboardData = {
   co2_saved_today: 1850,
-  eco_credits_earned: Math.floor(1850 / 10), // 10g당 1크레딧
-  garden_level: Math.floor(1850 / 100), // 100g당 레벨 1
+  eco_credits_earned: 185, // 10g당 1크레딧
+  garden_level: 3, // 고정 레벨
   total_saved: 18.5,
-  total_points: Math.floor(1850 / 10), // 10g당 1크레딧
+  total_points: 185, // 고정 크레딧
   last7days: [
     { date: "01/09", saved_g: 1200 },
     { date: "01/10", saved_g: 1500 },
@@ -51,24 +53,60 @@ const UNIFIED_DATA: DashboardData = {
     { mode: "버스", saved_g: 2800 },
     { mode: "도보", saved_g: 1500 },
   ],
-  challenge: { goal: 20, progress: 18.5 },
+  challenge: { goal: 20, progress: 8.76 }, // 43.8%에 해당하는 안정적인 값
 };
 
 const DashboardPage: React.FC = () => {
-  const { creditsData, addCredits } = useCredits();
+  const { creditsData } = useCredits();
+  const { showLoading, hideLoading } = useLoading();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState<string | null>(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8001";
+  // 실시간 크레딧 변경 애니메이션을 위한 상태
+  const [creditChange, setCreditChange] = useState<{amount: number, type: 'earn' | 'spend' | null}>({amount: 0, type: null});
+  const [showCreditAnimation, setShowCreditAnimation] = useState(false);
+
+  // 크레딧 변경 시 애니메이션 표시
+  useEffect(() => {
+    const handleCreditUpdate = (event: CustomEvent) => {
+      const { change } = event.detail;
+      if (change !== 0) {
+        setCreditChange({
+          amount: Math.abs(change),
+          type: change > 0 ? 'earn' : 'spend'
+        });
+        setShowCreditAnimation(true);
+        
+        // 3초 후 애니메이션 숨기기
+        setTimeout(() => {
+          setShowCreditAnimation(false);
+          setCreditChange({amount: 0, type: null});
+        }, 3000);
+      }
+    };
+
+    window.addEventListener('creditUpdated', handleCreditUpdate as EventListener);
+    return () => window.removeEventListener('creditUpdated', handleCreditUpdate as EventListener);
+  }, []);
+
+  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
   const userId = 1; // 실제 로그인 사용자 ID로 대체 필요
 
   // ✅ 데이터 불러오기
   useEffect(() => {
+    // 페이지 진입 시 스크롤을 최상단으로 이동
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError(null);
+      showLoading('대시보드 데이터를 불러오는 중...');
 
       try {
         const response = await fetch(`${API_URL}/api/dashboard/${userId}`, {
@@ -80,69 +118,130 @@ const DashboardPage: React.FC = () => {
           const result = await response.json();
           setData(result);
         } else {
-          console.warn("Dashboard API 응답 없음, 더미 데이터 사용");
-          setData(UNIFIED_DATA);
+          console.warn("Dashboard API 응답 없음, 데모 데이터 사용");
+          setData(DEMO_DATA);
         }
       } catch (e) {
-        console.warn("Dashboard API 연결 실패, 더미 데이터 사용:", e);
-        setData(UNIFIED_DATA);
+        console.warn("Dashboard API 연결 실패, 데모 데이터 사용:", e);
+        setData(DEMO_DATA);
       } finally {
         setLoading(false);
+        hideLoading();
       }
     };
 
-    fetchData();
-  }, [API_URL, userId]);
+    // 약간의 지연을 두고 데이터 로딩 (로딩 화면을 보여주기 위해)
+    const timer = setTimeout(() => {
+      fetchData();
+    }, 200);
 
-  // 크레딧 데이터가 변경될 때마다 대시보드 데이터 업데이트
-  useEffect(() => {
-    if (data) {
-      setData(prev => prev ? {
-        ...prev,
-        total_points: creditsData.totalCredits,
-        total_saved: creditsData.totalCarbonReduced,
-        // 실시간으로 오늘 절약량도 업데이트
-        co2_saved_today: 1850, // 고정값으로 설정 (실제로는 오늘의 절감량이어야 함)
-        eco_credits_earned: creditsData.totalCredits,
-        // 최근 7일 데이터도 실시간으로 업데이트 (오늘 데이터만 업데이트)
-        last7days: prev.last7days.map((day, index) => {
-          if (index === prev.last7days.length - 1) {
-            return {
-              ...day,
-              saved_g: 1850 // 고정값으로 설정 (실제로는 오늘의 절감량이어야 함)
-            };
-          }
-          return day;
-        })
-      } : null);
-    }
-  }, [creditsData, data]);
+    return () => clearTimeout(timer);
+  }, [API_URL, userId, showLoading, hideLoading]);
+
+  // 데모 버전 - 실시간 업데이트 제거
 
   // ✅ 챗봇으로 이동하는 함수
   const goToChat = () => {
     window.location.href = '/chat';
   };
 
-  // ✅ 상태 처리
-  if (loading) {
-    return (
-      <div className="dashboard-container" style={{ padding: "2rem", textAlign: "center" }}>
-        <h2>📊 내 대시보드</h2>
-        <p style={{ marginTop: "1rem", color: "#6b7280" }}>데이터를 불러오는 중...</p>
-      </div>
-    );
-  }
+  // ✅ 상태 처리 - 데이터가 없으면 기본 데이터 사용
   if (!data) {
+    // 데이터가 없을 때는 기본 데이터를 사용하여 화면을 표시
+    const defaultData = DEMO_DATA;
     return (
       <div className="dashboard-container">
-        <h2>📊 내 대시보드</h2>
-        <p>데이터를 불러오지 못했습니다. (샘플 보기)</p>
-        {/* 샘플 카드 */}
+        <PageHeader 
+          title="대시보드" 
+          subtitle="나의 친환경 활동 현황을 한눈에 확인하세요"
+          icon="📊"
+        />
+        
+        {/* 메인 통계 카드 */}
         <div className="dashboard-grid">
-        <div className="card"><h4>오늘 절약한 탄소</h4><p className="metric">1.85 g</p></div>
-        <div className="card"><h4>누적 절약량</h4><p className="metric">18.5 kg</p></div>
-          <div className="card"><h4>에코 크레딧</h4><p className="metric">1,240 P</p></div>
-          <div className="card"><h4>정원 레벨</h4><p className="metric">Lv.3 🌱</p></div>
+          <div className="card main-card">
+            <div className="card-icon">🌱</div>
+            <div className="card-content">
+              <h3>오늘 절약한 탄소</h3>
+              <p className="metric">{defaultData.co2_saved_today} g</p>
+              <p className="sub-metric">+{defaultData.eco_credits_earned} 크레딧</p>
+            </div>
+          </div>
+          
+          <div className="card main-card">
+            <div className="card-icon">💰</div>
+            <div className="card-content">
+              <h3>누적 절약량</h3>
+              <p className="metric">{defaultData.total_saved} kg</p>
+              <div className="credit-display-container">
+                <p className={`sub-metric ${showCreditAnimation ? 'credit-updated' : ''}`}>
+                  총 {defaultData.total_points} 크레딧
+                </p>
+                {showCreditAnimation && (
+                  <div className={`credit-change-animation ${creditChange.type}`}>
+                    {creditChange.type === 'earn' ? '+' : '-'}{creditChange.amount}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          <div className="card main-card">
+            <div className="card-icon">🌿</div>
+            <div className="card-content">
+              <h3>정원 레벨</h3>
+              <p className="metric">Lv.{defaultData.garden_level}</p>
+              <p className="sub-metric">다음 레벨까지 {10 - (defaultData.garden_level * 2)}%</p>
+            </div>
+          </div>
+          
+          <div className="card main-card">
+            <div className="card-icon">🏆</div>
+            <div className="card-content">
+              <h3>챌린지 진행</h3>
+              <p className="metric">{Math.round((defaultData.challenge.progress / defaultData.challenge.goal) * 100)}%</p>
+              <p className="sub-metric">{defaultData.challenge.progress}/{defaultData.challenge.goal} kg</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* 추가 섹션들 */}
+        <div className="dashboard-sections">
+          <div className="section">
+            <h3>📈 최근 7일 탄소 절약</h3>
+            <div className="chart-container">
+              <div className="chart-bars">
+                {defaultData.last7days.map((day: any, index: number) => (
+                  <div key={index} className="chart-bar">
+                    <div 
+                      className="bar-fill" 
+                      style={{ height: `${(day.saved_g / 2000) * 100}%` }}
+                    ></div>
+                    <span className="bar-label">{day.date}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          <div className="section">
+            <h3>🚌 이동 수단별 절약량</h3>
+            <div className="mode-stats">
+              {defaultData.modeStats.map((mode: any, index: number) => (
+                <div key={index} className="mode-item">
+                  <span className="mode-icon">
+                    {mode.mode === '지하철' ? '🚇' : 
+                     mode.mode === '자전거' ? '🚲' : 
+                     mode.mode === '버스' ? '🚌' : '🚶'}
+                  </span>
+                  <div className="mode-info">
+                    <span className="mode-name">{mode.mode}</span>
+                    <span className="mode-amount">{mode.saved_g}g</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -175,9 +274,16 @@ const DashboardPage: React.FC = () => {
         </Link>
         <Link to="/credit" className="card clickable-card">
           <h4>에코 크레딧</h4>
-          <p className="metric">
-            {data.total_points} <span>C</span>
-          </p>
+          <div className="credit-display-container">
+            <p className={`metric ${showCreditAnimation ? 'credit-updated' : ''}`}>
+              {data.total_points} <span>C</span>
+            </p>
+            {showCreditAnimation && (
+              <div className={`credit-change-animation ${creditChange.type}`}>
+                {creditChange.type === 'earn' ? '+' : '-'}{creditChange.amount}
+              </div>
+            )}
+          </div>
         </Link>
         <Link to="/mygarden" className="card clickable-card">
           <h4>정원 레벨</h4>
