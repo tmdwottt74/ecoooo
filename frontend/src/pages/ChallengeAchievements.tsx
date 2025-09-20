@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useCredits } from "../contexts/CreditsContext";
 import PageHeader from "../components/PageHeader";
 
@@ -577,6 +578,7 @@ interface AchievementData {
 
 const ChallengeAchievements: React.FC = () => {
   const { addCredits } = useCredits();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<'challenges' | 'achievements'>('challenges');
   const [challenges, setChallenges] = useState<ChallengeData[]>([]);
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
@@ -885,54 +887,56 @@ const ChallengeAchievements: React.FC = () => {
     return () => clearInterval(interval);
   }, [addCredits]);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        
-        // 챌린지 데이터 로드
-        const response = await fetch(`${API_URL}/api/challenges`, { headers: getAuthHeaders() });
-        
-        if (response.ok) {
-          const data = await response.json();
-          // Map backend's is_joined to frontend's isParticipating
-          const mappedChallenges = data.map((c: any) => ({
-            id: c.id,
-            title: c.title,
-            description: c.description,
-            progress: c.progress,
-            reward: c.reward,
-            isParticipating: c.is_joined, // Map is_joined to isParticipating
-            isCompleted: c.is_completed || false, // Assuming backend might send is_completed or default to false
-            startDate: c.start_at, // Assuming backend sends start_at
-            endDate: c.end_at // Assuming backend sends end_at
-          }));
-          setChallenges(mappedChallenges);
-        } else {
-          throw new Error("API 실패");
-        }
-
-        // 업적 데이터 로드
-        const achievementsResponse = await fetch(`${API_URL}/api/achievements`, { headers: getAuthHeaders() });
-        
-        if (achievementsResponse.ok) {
-          const achievementsData = await achievementsResponse.json();
-          setAchievements(achievementsData);
-        } else {
-          throw new Error("API 실패");
-        }
-      } catch (error) {
-        console.error("데이터 로드 실패:", error);
-        setChallenges(dummyChallenges);
-        setAchievements(dummyAchievements);
-      } finally {
-        // 로딩 상태 해제
-        setLoading(false);
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // 챌린지 데이터 로드
+      const response = await fetch(`${API_URL}/api/challenges`, { headers: getAuthHeaders() });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Map backend's is_joined to frontend's isParticipating
+        const mappedChallenges = data.map((c: any) => ({
+          id: c.id,
+          title: c.title,
+          description: c.description,
+          progress: c.progress,
+          reward: c.reward,
+          isParticipating: c.is_joined, // Map is_joined to isParticipating
+          isCompleted: c.is_completed || false, // Assuming backend might send is_completed or default to false
+          startDate: c.start_at, // Assuming backend sends start_at
+          endDate: c.end_at // Assuming backend sends end_at
+        }));
+        setChallenges(mappedChallenges);
+      } else {
+        throw new Error("API 실패");
       }
-    };
 
-    loadData();
-  }, []);
+      // 업적 데이터 로드
+      const achievementsResponse = await fetch(`${API_URL}/api/achievements`, { headers: getAuthHeaders() });
+      
+      if (achievementsResponse.ok) {
+        const achievementsData = await achievementsResponse.json();
+        setAchievements(achievementsData);
+      } else {
+        throw new Error("API 실패");
+      }
+    } catch (error) {
+      console.error("데이터 로드 실패:", error);
+      setChallenges(dummyChallenges);
+      setAchievements(dummyAchievements);
+    } finally {
+      // 로딩 상태 해제
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (location.pathname === '/challenge-achievements') {
+      loadData();
+    }
+  }, [location.pathname]);
 
   if (loading) {
     return (

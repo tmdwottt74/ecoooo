@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
-  id: string;
-  name: string;
+  username: string;
+  user_id: number;   // ✅ 이 필드 추가
   email: string;
   password?: string; // 비밀번호 추가
   phone?: string; // 전화번호 추가
@@ -75,18 +75,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { access_token, token_type, user_id, username, role } = userData;
 
       localStorage.setItem('access_token', access_token);
+      localStorage.setItem('userId', user_id); // 사용자 ID 저장 추가
       
-      const loggedInUser: User = {
-        id: user_id.toString(), // Ensure ID is string
-        name: username,
-        email: email, // Use provided email for consistency
-        role: role
-      };
+    const loggedInUser: User = {
+      user_id: user_id ?? 0,   // null/undefined 방지
+      username,
+      email,
+      role,
+    };
 
       localStorage.setItem('eco-user', JSON.stringify(loggedInUser));
       
       setUser(loggedInUser);
       setIsAuthenticated(true);
+      sessionStorage.setItem('isFirstLoginInSession', 'true'); // 세션 첫 로그인 플래그
       
       return loggedInUser;
     } catch (error) {
@@ -133,7 +135,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.clear(); // 모든 로컬 스토리지 데이터 제거
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('eco-user');
+    localStorage.removeItem('userId');
     
     setUser(null);
     setIsAuthenticated(false);

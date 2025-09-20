@@ -115,7 +115,7 @@ const Challenge: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const currentUserId = user?.id;
+  const currentUserId = user?.user_id;
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
   // localStorage helpers

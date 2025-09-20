@@ -78,19 +78,20 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
-  // AuthContext의 사용자 정보가 변경될 때 UserContext 동기화
-  useEffect(() => {
-    if (authUser) {
-      setUser(prev => ({
-        ...prev,
-        id: authUser.id, // AuthContext에서 이미 string으로 변환됨
-        name: authUser.name,
-        email: authUser.email,
-        password: authUser.password,
-        phone: authUser.phone || prev.phone,
-      }));
-    }
-  }, [authUser]);
+// AuthContext의 사용자 정보가 변경될 때 UserContext 동기화
+useEffect(() => {
+  if (authUser && authUser.user_id) {
+    setUser(prev => ({
+      ...prev,
+      id: authUser.user_id.toString(), // ✅ 타입 맞추기
+      username: authUser.username,     // ✅ name → username 통일
+      email: authUser.email,
+      password: authUser.password,
+      phone: authUser.phone || prev.phone,
+    }));
+  }
+}, [authUser]);
+
 
   // localStorage에서 크레딧 데이터를 가져와서 UserContext 동기화
   useEffect(() => {
@@ -102,13 +103,20 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const totalCredits = parseInt(storedCredits);
         const totalCarbonReduced = parseFloat(storedCarbon);
         
-        setUser(prev => ({
-          ...prev,
-          totalCredits,
-          totalCarbonReduced,
-          level: `Lv.${Math.floor(totalCredits / 100) + 1}`,
-          gardenLevel: Math.floor(totalCredits / 100) + 1,
-        }));
+        setUser(prev => {
+          // Only update if the values have actually changed
+          if (prev.totalCredits === totalCredits && prev.totalCarbonReduced === totalCarbonReduced) {
+            return prev;
+          }
+          
+          return {
+            ...prev,
+            totalCredits,
+            totalCarbonReduced,
+            level: `Lv.${Math.floor(totalCredits / 100) + 1}`,
+            gardenLevel: Math.floor(totalCredits / 100) + 1,
+          };
+        });
       }
     };
 

@@ -221,40 +221,6 @@ const Credit: React.FC = () => {
         icon="💰"
       />
 
-      {/* 탭 네비게이션 */}
-      <div className="credit-tabs">
-        <button 
-          className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
-          onClick={() => setActiveTab('overview')}
-        >
-          📊 전체 현황
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'recent' ? 'active' : ''}`}
-          onClick={() => setActiveTab('recent')}
-        >
-          📅 오늘 절약한 탄소
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'points' ? 'active' : ''}`}
-          onClick={() => setActiveTab('points')}
-        >
-          📈 누적 절약량
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'transport' ? 'active' : ''}`}
-          onClick={() => setActiveTab('transport')}
-        >
-          🚌 교통수단 이용내역
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          📋 최근 크레딧 내역
-        </button>
-        </div>
-
       {/* 간소화된 사용자 정보 카드 */}
       <div className="user-summary-card">
         <div className="user-info-simple">
@@ -267,266 +233,206 @@ const Credit: React.FC = () => {
         <div className="summary-stats">
           <div className="summary-stat">
             <span className="stat-label-simple">누적 크레딧</span>
-            <span className="stat-value-simple">{userInfo.totalCredits}C</span>
+            <span className="stat-value-simple">{creditsData.accumulatedCredits.toLocaleString()}C</span>
+          </div>
+          <div className="summary-stat">
+            <span className="stat-label-simple">총 크레딧</span>
+            <span className="stat-value-simple">{creditsData.totalCredits.toLocaleString()}C</span>
           </div>
           <div className="summary-stat">
             <span className="stat-label-simple">누적 절감량</span>
-            <span className="stat-value-simple">{userInfo.totalSaving}</span>
+            <span className="stat-value-simple">{creditsData.totalCarbonReduced.toFixed(1)}kg CO₂</span>
           </div>
         </div>
       </div>
 
-      {/* 탭별 콘텐츠 */}
-      {activeTab === 'overview' && (
-        <>
-          {/* 액션 버튼들 */}
-          <div className="simple-actions">
-            <button 
-              className="simple-action-btn"
-              onClick={() => setActiveTab('history')}
-            >
-              📋 크레딧 내역보기
-            </button>
-            <button 
-              className="simple-action-btn"
-              onClick={() => setActiveTab('transport')}
-            >
-              🚌 이동 기록보기
-            </button>
-            <button 
-              className="simple-action-btn"
-              onClick={() => setActiveTab('points')}
-            >
-              📊 절약량 상세보기
-            </button>
-          </div>
-
-          {/* AI 챗봇 안내 */}
-          <div 
-            className="simple-chat-notice"
-            onClick={() => window.location.href = '/chat'}
-          >
-            <div className="chat-icon">🤖</div>
-            <div className="chat-content">
-              <h4>AI 챗봇과 친환경 활동하기</h4>
-              <p>대화하며 크레딧을 획득하세요 →</p>
-            </div>
-          </div>
-
-          {/* 최근 활동 요약 */}
-          <div className="recent-summary">
-            <h3>📈 최근 활동 요약</h3>
-            <div className="summary-cards">
-              <div className="summary-card">
-                <div className="card-icon">💰</div>
-                <div className="card-content">
-                  <div className="card-value">{creditsData.totalCredits}C</div>
-                  <div className="card-label">총 크레딧</div>
-                </div>
-      </div>
-              <div className="summary-card">
-                <div className="card-icon">🌱</div>
-                <div className="card-content">
-                  <div className="card-value">{creditsData.totalCarbonReduced.toFixed(1)}kg</div>
-                  <div className="card-label">총 절약량</div>
-        </div>
+      {/* 최근 크레딧 내역 */}
+      <div className="tab-content active">
+        <h3>📋 최근 크레딧 내역</h3>
+        <div className="credit-history">
+          <div className="history-header">
+            <div className="history-stats">
+              <div className="stat-item">
+                <span className="stat-label">총 크레딧</span>
+                <span className="stat-value">{creditsData.totalCredits}C</span>
               </div>
-              <div className="summary-card">
-                <div className="card-icon">🚌</div>
-                <div className="card-content">
-                  <div className="card-value">{transportHistory.length}회</div>
-                  <div className="card-label">이동 기록</div>
-                </div>
+              <div className="stat-item">
+                <span className="stat-label">총 내역</span>
+                <span className="stat-value">{creditsHistory.length}건</span>
               </div>
             </div>
+            <button 
+              className="refresh-btn"
+              onClick={loadCreditsHistory}
+              disabled={historyLoading}
+            >
+              {historyLoading ? "새로고침 중..." : "🔄 새로고침"}
+            </button>
           </div>
-        </>
-      )}
-
-      {activeTab === 'recent' && (
-        <div className="tab-content">
-          <h3>📅 오늘 절약한 탄소</h3>
-          <div className="carbon-savings">
-            <div className="savings-card">
-              <div className="savings-icon">🌱</div>
-              <div className="savings-content">
-                <div className="savings-amount">{Math.round(creditsData.totalCarbonReduced * 1000)}g</div>
-                <div className="savings-label">오늘 절약한 탄소량</div>
-              </div>
-            </div>
-            <div className="savings-breakdown">
-              <h4>활동별 절약량</h4>
-              <div className="breakdown-list">
-                {transportHistory.length > 0 ? (
-                  transportHistory.slice(0, 5).map((trip, index) => (
-                    <div key={index} className="breakdown-item">
-                      <span className="breakdown-icon">
-                        {trip.transport_mode === "지하철" ? "🚇" : 
-                         trip.transport_mode === "버스" ? "🚌" : 
-                         trip.transport_mode === "자전거" ? "🚴" : 
-                         trip.transport_mode === "도보" ? "🚶" : "🚗"}
-                      </span>
-                      <span className="breakdown-text">{trip.transport_mode} 이용</span>
-                      <span className="breakdown-amount">{Math.round(trip.carbon_saved_kg * 1000)}g</span>
+          <div className="history-list">
+            {historyLoading ? (
+              <div className="loading-message">크레딧 내역을 불러오는 중...</div>
+            ) : creditsHistory.length > 0 ? (
+              creditsHistory.map((item) => (
+                <div key={item.entry_id} className={`credit-item ${item.points > 0 ? "positive" : "negative"}`}>
+                  <div className="item-icon">
+                    {item.reason.includes("지하철") ? "🚇" : 
+                     item.reason.includes("버스") ? "🚌" : 
+                     item.reason.includes("자전거") ? "🚴" : 
+                     item.reason.includes("도보") ? "🚶" : 
+                     item.reason.includes("보너스") ? "🎁" : 
+                     item.reason.includes("물주기") ? "💧" : 
+                     item.reason.includes("GARDEN") ? "💧" : 
+                     item.reason.includes("챌린지") ? "🏆" : "📝"}
+                  </div>
+                  <div className="item-content">
+                    <div className="item-desc">{item.reason}</div>
+                    <div className="item-meta">
+                      <span className="item-date">{new Date(item.created_at).toLocaleDateString()}</span>
+                      <span className="item-time">{new Date(item.created_at).toLocaleTimeString()}</span>
                     </div>
-                  ))
-                ) : (
-                  <div className="empty-message">오늘의 교통수단 이용내역이 없습니다.</div>
-                )}
-              </div>
-            </div>
+                  </div>
+                  <div className={`item-credits ${item.points > 0 ? "positive" : "negative"}`}>
+                    {item.points > 0 ? `+${item.points}` : `${item.points}`}C
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="empty-message">크레딧 내역이 없습니다.</div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
-      {activeTab === 'points' && (
-        <div className="tab-content">
-          <h3>📈 누적 절약량</h3>
-          <div className="total-savings">
-            <div className="savings-card">
-              <div className="savings-icon">🌍</div>
-              <div className="savings-content">
-                <div className="savings-amount">{creditsData.totalCarbonReduced.toFixed(1)}kg</div>
-                <div className="savings-label">총 절약한 탄소량</div>
-              </div>
-            </div>
-            <div className="savings-timeline">
-              <h4>교통수단별 절약량</h4>
-              <div className="timeline-chart">
-                {transportHistory.length > 0 ? (
-                  (() => {
-                    // 교통수단별 데이터 집계
-                    const modeData: Record<string, { total: number; count: number }> = transportHistory.reduce((acc, trip) => {
-                      const mode = trip.transport_mode;
-                      if (!acc[mode]) {
-                        acc[mode] = { total: 0, count: 0 };
-                      }
-                      acc[mode].total += trip.carbon_saved_kg;
-                      acc[mode].count += 1;
-                      return acc;
-                    }, {} as Record<string, { total: number; count: number }>);
-
-                    // 최대값 계산
-                    const values = Object.values(modeData).map((item: { total: number; count: number }) => item.total);
-                    const maxValue = values.length > 0 ? Math.max(...values) : 0;
-
-                    // 차트 바 생성
-                    return Object.entries(modeData).map(([mode, data]: [string, { total: number; count: number }], index) => {
-                      const height = maxValue > 0 ? (data.total / maxValue) * 100 : 0;
-                      
-                      return (
-                        <div key={index} className="timeline-bar" style={{ height: `${height}%` }}>
-                          <span className="timeline-label">{mode}</span>
-                          <span className="timeline-value">{data.total.toFixed(1)}kg</span>
-                        </div>
-                      );
-                    });
-                  })()
-                ) : (
-                  <div className="empty-message">교통수단 이용내역이 없습니다.</div>
-                )}
-              </div>
+      {/* 오늘 절약한 탄소 */}
+      <div className="tab-content active">
+        <h3>📅 오늘 절약한 탄소</h3>
+        <div className="carbon-savings">
+          <div className="savings-card">
+            <div className="savings-icon">🌱</div>
+            <div className="savings-content">
+              <div className="savings-amount">{Math.round(creditsData.totalCarbonReduced * 1000)}g</div>
+              <div className="savings-label">오늘 절약한 탄소량</div>
             </div>
           </div>
-        </div>
-      )}
-
-      {activeTab === 'transport' && (
-        <div className="tab-content">
-          <h3>🚌 교통수단 이용내역</h3>
-          <div className="transport-history">
-            {transportLoading ? (
-              <div className="loading-message">교통수단 이용내역을 불러오는 중...</div>
-            ) : transportHistory.length > 0 ? (
-              <div className="transport-list">
-                {transportHistory.map((trip) => (
-                  <div key={trip.id} className="transport-item">
-                    <div className="transport-icon">
+          <div className="savings-breakdown">
+            <h4>활동별 절약량</h4>
+            <div className="breakdown-list">
+              {transportHistory.length > 0 ? (
+                transportHistory.slice(0, 5).map((trip, index) => (
+                  <div key={index} className="breakdown-item">
+                    <span className="breakdown-icon">
                       {trip.transport_mode === "지하철" ? "🚇" : 
                        trip.transport_mode === "버스" ? "🚌" : 
                        trip.transport_mode === "자전거" ? "🚴" : 
                        trip.transport_mode === "도보" ? "🚶" : "🚗"}
-                    </div>
-                    <div className="transport-content">
-                      <div className="transport-mode">{trip.transport_mode}</div>
-                      <div className="transport-route">{trip.route}</div>
-                      <div className="transport-meta">
-                        <span className="transport-date">{trip.date}</span>
-                        <span className="transport-distance">{trip.distance_km}km</span>
-                      </div>
-                    </div>
-                    <div className="transport-stats">
-                      <div className="carbon-saved">-{trip.carbon_saved_kg}kg</div>
-                      <div className="points-earned">+{trip.points_earned}C</div>
-              </div>
-            </div>
-          ))}
-              </div>
-            ) : (
-              <div className="empty-message">교통수단 이용내역이 없습니다.</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'history' && (
-        <div className="tab-content">
-          <h3>📋 최근 크레딧 내역</h3>
-          <div className="credit-history">
-            <div className="history-header">
-              <div className="history-stats">
-                <div className="stat-item">
-                  <span className="stat-label">총 크레딧</span>
-                  <span className="stat-value">{creditsData.totalCredits}C</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">총 내역</span>
-                  <span className="stat-value">{creditsHistory.length}건</span>
-                </div>
-              </div>
-              <button 
-                className="refresh-btn"
-                onClick={loadCreditsHistory}
-                disabled={historyLoading}
-              >
-                {historyLoading ? "새로고침 중..." : "🔄 새로고침"}
-              </button>
-            </div>
-            <div className="history-list">
-              {historyLoading ? (
-                <div className="loading-message">크레딧 내역을 불러오는 중...</div>
-              ) : creditsHistory.length > 0 ? (
-                creditsHistory.map((item) => (
-                  <div key={item.entry_id} className={`credit-item ${item.points > 0 ? "positive" : "negative"}`}>
-                    <div className="item-icon">
-                      {item.reason.includes("지하철") ? "🚇" : 
-                       item.reason.includes("버스") ? "🚌" : 
-                       item.reason.includes("자전거") ? "🚴" : 
-                       item.reason.includes("도보") ? "🚶" : 
-                       item.reason.includes("보너스") ? "🎁" : 
-                       item.reason.includes("물주기") ? "💧" : 
-                       item.reason.includes("GARDEN") ? "💧" : 
-                       item.reason.includes("챌린지") ? "🏆" : "📝"}
-                    </div>
-                    <div className="item-content">
-                      <div className="item-desc">{item.reason}</div>
-                      <div className="item-meta">
-                        <span className="item-date">{new Date(item.created_at).toLocaleDateString()}</span>
-                        <span className="item-time">{new Date(item.created_at).toLocaleTimeString()}</span>
-                      </div>
-                    </div>
-                    <div className={`item-credits ${item.points > 0 ? "positive" : "negative"}`}>
-                      {item.points > 0 ? `+${item.points}` : `${item.points}`}C
-                    </div>
+                    </span>
+                    <span className="breakdown-text">{trip.transport_mode} 이용</span>
+                    <span className="breakdown-amount">{Math.round(trip.carbon_saved_kg * 1000)}g</span>
                   </div>
                 ))
               ) : (
-                <div className="empty-message">크레딧 내역이 없습니다.</div>
+                <div className="empty-message">오늘의 교통수단 이용내역이 없습니다.</div>
               )}
             </div>
+          </div>
         </div>
       </div>
-      )}
+
+      {/* 교통수단 이용내역 */}
+      <div className="tab-content active">
+        <h3>🚌 교통수단 이용내역</h3>
+        <div className="transport-history">
+          {transportLoading ? (
+            <div className="loading-message">교통수단 이용내역을 불러오는 중...</div>
+          ) : transportHistory.length > 0 ? (
+            <div className="transport-list">
+              {transportHistory.map((trip) => (
+                <div key={trip.id} className="transport-item">
+                  <div className="transport-icon">
+                    {trip.transport_mode === "지하철" ? "🚇" : 
+                     trip.transport_mode === "버스" ? "🚌" : 
+                     trip.transport_mode === "자전거" ? "🚴" : 
+                     trip.transport_mode === "도보" ? "🚶" : "🚗"}
+                  </div>
+                  <div className="transport-content">
+                    <div className="transport-mode">{trip.transport_mode}</div>
+                    <div className="transport-route">{trip.route}</div>
+                    <div className="transport-meta">
+                      <span className="transport-date">{trip.date}</span>
+                      <span className="transport-distance">{trip.distance_km}km</span>
+                    </div>
+                  </div>
+                  <div className="transport-stats">
+                    <div className="carbon-saved">-{trip.carbon_saved_kg}kg</div>
+                    <div className="points-earned">+{trip.points_earned}C</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-message">교통수단 이용내역이 없습니다.</div>
+          )}
+        </div>
+      </div>
+
+      {/* 누적 절약량 */}
+      <div className="tab-content active">
+        <h3>📈 누적 절약량</h3>
+        <div className="total-savings">
+          <div className="savings-card">
+            <div className="savings-icon">🌍</div>
+            <div className="savings-content">
+              <div className="savings-amount">{creditsData.totalCarbonReduced.toFixed(1)}kg</div>
+              <div className="savings-label">총 절약한 탄소량</div>
+            </div>
+          </div>
+          <div className="savings-timeline">
+            <h4>교통수단별 절약량</h4>
+            <div className="timeline-chart">
+              {transportHistory.length > 0 ? (
+                (() => {
+                  const modeData: Record<string, { total: number; count: number }> = transportHistory.reduce((acc, trip) => {
+                    const mode = trip.transport_mode;
+                    if (!acc[mode]) {
+                      acc[mode] = { total: 0, count: 0 };
+                    }
+                    acc[mode].total += trip.carbon_saved_kg;
+                    acc[mode].count += 1;
+                    return acc;
+                  }, {} as Record<string, { total: number; count: number }>);
+                  const values = Object.values(modeData).map((item: { total: number; count: number }) => item.total);
+                  const maxValue = values.length > 0 ? Math.max(...values) : 0;
+                  return Object.entries(modeData).map(([mode, data]: [string, { total: number; count: number }], index) => {
+                    const height = maxValue > 0 ? (data.total / maxValue) * 100 : 0;
+                    return (
+                      <div key={index} className="timeline-bar" style={{ height: `${height}%` }}>
+                        <span className="timeline-label">{mode}</span>
+                        <span className="timeline-value">{data.total.toFixed(1)}kg</span>
+                      </div>
+                    );
+                  });
+                })()
+              ) : (
+                <div className="empty-message">교통수단 이용내역이 없습니다.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI 챗봇 안내 */}
+      <div 
+        className="simple-chat-notice"
+        onClick={() => window.location.href = '/chat'}
+        style={{ marginTop: '2rem' }}
+      >
+        <div className="chat-icon">🤖</div>
+        <div className="chat-content">
+          <h4>AI 챗봇과 친환경 활동하기</h4>
+          <p>대화하며 크레딧을 획득하세요 →</p>
+        </div>
+      </div>
     </div>
   );
 };

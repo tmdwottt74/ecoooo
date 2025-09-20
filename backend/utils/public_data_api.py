@@ -257,3 +257,4 @@ class PublicDataAPI:
 # 전역 인스턴스
 public_data_api = PublicDataAPI()
 
+

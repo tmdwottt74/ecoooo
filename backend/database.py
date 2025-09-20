@@ -45,11 +45,15 @@ def get_db():
 
 def init_db():
     """데이터베이스 테이블을 생성하고 초기 데이터를 시딩합니다."""
-    from .models import Base
+    from .models import Base, Challenge, ChallengeMember
     from .seed_admin_user import seed_admin_user
     from .seed_challenges import seed_challenges
     from .seed_garden_levels import seed_garden_levels
     from .crud import create_user_group # Assuming this is needed for initial groups
+
+    # DEV ONLY: Drop tables to apply schema changes. This deletes all data!
+    ChallengeMember.__table__.drop(engine, checkfirst=True)
+    Challenge.__table__.drop(engine, checkfirst=True)
 
     Base.metadata.create_all(bind=engine)
 

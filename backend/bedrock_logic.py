@@ -70,7 +70,7 @@ def query_knowledge_base(query):
             retrieveAndGenerateConfiguration={
                 'type': 'KNOWLEDGE_BASE',
                 'knowledgeBaseConfiguration': {
-                    'knowledgeBaseId': BEDROCK_KNOWLEDGE_BASE_BASE_ID,
+                    'knowledgeBaseId': BEDROCK_KNOWLEDGE_BASE_ID,
                     'modelArn': BEDROCK_MODEL_ARN
                 }
             }

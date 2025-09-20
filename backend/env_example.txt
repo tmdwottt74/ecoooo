@@ -25,3 +25,4 @@ BEDROCK_KNOWLEDGE_BASE_ID=your_knowledge_base_id
 GOOGLE_API_KEY=your_google_api_key
 GOOGLE_CSE_ID=your_google_cse_id
 
+

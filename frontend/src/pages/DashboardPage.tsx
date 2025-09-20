@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { useUser } from "../contexts/UserContext";
 import { useCredits } from "../contexts/CreditsContext";
 import { useAppData } from "../contexts/AppDataContext";
 import { useLoading } from "../contexts/LoadingContext";
@@ -130,6 +132,8 @@ const DEMO_DATA: DashboardData = {
 };
 
 const DashboardPage: React.FC = () => {
+  const { user: authUser } = useAuth();
+  const { user } = useUser();
   const { creditsData } = useCredits();
   const { showLoading, hideLoading } = useLoading();
   const [data, setData] = useState<DashboardData | null>(DEMO_DATA); // 초기값으로 데모 데이터 설정
@@ -567,37 +571,56 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!authUser?.user_id) {
+        setData(DEMO_DATA);
+        return;
+      }
+
+      // Set base data depending on user role
+      let baseData = authUser.role === 'admin' 
+        ? { co2_saved_today: 0, last7days: [] } // Admin starts with 0
+        : { ...DEMO_DATA }; // Test user starts with DEMO
+
+      let dashboardData: DashboardData = { ...DEMO_DATA, ...baseData };
+
       try {
-        setError(null);
-        
-        // API 호출 시도 (타임아웃 설정)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000); // 2초 타임아웃
-        
-        const response = await fetch(`${API_URL}/api/dashboard/${userId}`, {
+        const response = await fetch(`${API_URL}/api/dashboard/${authUser.user_id}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
-          signal: controller.signal
         });
-
-        clearTimeout(timeoutId);
 
         if (response.ok) {
           const result = await response.json();
-          setData(result);
-        } else {
-          console.warn("Dashboard API 응답 없음, 데모 데이터 사용");
-          // 이미 데모 데이터가 설정되어 있으므로 업데이트만
+          dashboardData = { ...dashboardData, ...result };
         }
       } catch (e) {
-        console.warn("Dashboard API 연결 실패, 데모 데이터 사용:", e);
-        // 이미 데모 데이터가 설정되어 있으므로 업데이트만
+        console.warn("Dashboard API 연결 실패", e);
       }
+
+      // 1. Overwrite with live data from contexts
+      dashboardData.total_points = creditsData.totalCredits;
+      dashboardData.total_saved = creditsData.totalCarbonReduced;
+      dashboardData.garden_level = user.gardenLevel;
+
+      // 2. Handle chart data based on user role
+      if (authUser.role === 'admin') {
+        if (!dashboardData.last7days || dashboardData.last7days.length === 0) {
+          dashboardData.last7days = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            return { date: d.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }), saved_g: 0 };
+          }).reverse();
+        }
+      } else {
+        // For 'test' user, ensure chart uses DEMO_DATA
+        dashboardData.last7days = DEMO_DATA.last7days;
+      }
+      
+      setData(dashboardData);
     };
 
-    // 백그라운드에서 데이터 로딩 (로딩 표시 없음)
     fetchData();
-  }, [API_URL, userId]);
+  }, [authUser, creditsData, user, API_URL]);
 
   // 데모 버전 - 실시간 업데이트 제거
 
@@ -1048,6 +1071,13 @@ const DashboardPage: React.FC = () => {
           }}>
             날짜
           </div>
+
+          {/* Disclaimer for test user */}
+          {authUser?.role !== 'admin' && (
+            <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#7f8c8d', marginTop: '1rem' }}>
+              임의로 생성된 표입니다(관리자 모드에서 제대로 작동하는 걸 확인할 수 있습니다)
+            </p>
+          )}
 
           {/* 차트 하단 정보 */}
           <div style={{

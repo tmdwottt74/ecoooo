@@ -64,14 +64,13 @@ const UserInfo: React.FC = () => {
     }));
   };
 
-  const handleNotificationChange = (type: string, checked: boolean) => {
-    setEditData(prev => ({
-      ...prev,
+  const handleNotificationToggle = (type: 'email' | 'push' | 'sms') => {
+    updateUser({
       notifications: {
-        ...prev.notifications,
-        [type]: checked
-      }
-    }));
+        ...user.notifications,
+        [type]: !user.notifications[type],
+      },
+    });
   };
 
   const handleTransportClick = () => {
@@ -318,9 +317,8 @@ const UserInfo: React.FC = () => {
                   <label className="notification-label">
                     <input
                       type="checkbox"
-                      checked={isEditing ? editData.notifications.email : userData.notifications.email}
-                      onChange={(e) => handleNotificationChange('email', e.target.checked)}
-                      disabled={!isEditing}
+                      checked={user.notifications.email}
+                      onChange={() => handleNotificationToggle('email')}
                     />
                     <span className="notification-text">이메일 알림</span>
                   </label>
@@ -329,9 +327,8 @@ const UserInfo: React.FC = () => {
                   <label className="notification-label">
                     <input
                       type="checkbox"
-                      checked={isEditing ? editData.notifications.push : userData.notifications.push}
-                      onChange={(e) => handleNotificationChange('push', e.target.checked)}
-                      disabled={!isEditing}
+                      checked={user.notifications.push}
+                      onChange={() => handleNotificationToggle('push')}
                     />
                     <span className="notification-text">푸시 알림</span>
                   </label>
@@ -340,9 +337,8 @@ const UserInfo: React.FC = () => {
                   <label className="notification-label">
                     <input
                       type="checkbox"
-                      checked={isEditing ? editData.notifications.sms : userData.notifications.sms}
-                      onChange={(e) => handleNotificationChange('sms', e.target.checked)}
-                      disabled={!isEditing}
+                      checked={user.notifications.sms}
+                      onChange={() => handleNotificationToggle('sms')}
                     />
                     <span className="notification-text">SMS 알림</span>
                   </label>

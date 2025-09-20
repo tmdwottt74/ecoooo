@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useCredits } from "../contexts/CreditsContext";
 import { useUser } from "../contexts/UserContext";
+import { useLoading } from "../contexts/LoadingContext";
 import PageHeader from "../components/PageHeader";
 import { getAuthHeaders } from "../contexts/CreditsContext";
 import "./MyGarden.css";
@@ -39,10 +41,12 @@ const getPlantStage = (level: number): string =>
 const MyGarden: React.FC = () => {
   const { creditsData, waterGarden, refreshCredits } = useCredits(); // fetchCreditsData 추가
   const { user } = useUser();
+  const { showLoading, hideLoading } = useLoading();
   const [gardenStatus, setGardenStatus] = useState<GardenStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [animate, setAnimate] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const location = useLocation();
 
   const fetchGardenData = async () => {
     if (!user || !user.id) {
@@ -50,6 +54,8 @@ const MyGarden: React.FC = () => {
       setLoading(false);
       return;
     }
+    
+    showLoading("정원 정보를 불러오는 중...");
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/api/credits/garden/${user.id}`,
@@ -65,22 +71,29 @@ const MyGarden: React.FC = () => {
       setStatusMessage("정원 정보를 불러오는 데 실패했습니다.");
     } finally {
       setLoading(false);
+      hideLoading();
     }
   };
 
   useEffect(() => {
-    fetchGardenData();
-  }, [user]); // user가 변경될 때마다 다시 불러오기
+    // '나만의 정원' 페이지에 있을 때만 데이터를 새로고침합니다.
+    // 이렇게 하면 다른 페이지에 있다가 돌아왔을 때 항상 최신 정보를 보장합니다.
+    if (location.pathname === '/mygarden') {
+      fetchGardenData();
+      refreshCredits();
+    }
+  }, [user, location.pathname]); // 사용자가 바뀌거나 경로가 변경될 때마다 실행
 
   const handleWater = async () => {
     if (!gardenStatus) return;
     
     // 크레딧이 부족한지 먼저 체크
     if (creditsData.totalCredits < WATER_COST) {
-      setStatusMessage("크레딧이 부족합니다!");
+      alert("크레딧이 부족합니다!");
       return;
     }
 
+    showLoading("물주기 중...");
     setAnimate(true);
     setTimeout(() => setAnimate(false), 500);
 
@@ -101,14 +114,23 @@ const MyGarden: React.FC = () => {
     } catch (error) {
       console.error("물주기 실패:", error);
       setStatusMessage("물주기에 실패했습니다.");
+    } finally {
+      hideLoading();
     }
   };
 
   if (loading) {
     return (
       <div className="garden-card">
-        <div style={{ textAlign: 'center', padding: '3rem' }}>
-          <div className="spinner">불러오는 중...</div>
+        <PageHeader 
+          title="나만의 정원" 
+          subtitle="크레딧으로 가상 정원을 꾸며보세요"
+          icon="🌿"
+        />
+        <div className="garden-content">
+          <div style={{ textAlign: 'center', padding: '3rem' }}>
+            <div className="loading-placeholder">정원을 준비하고 있습니다...</div>
+          </div>
         </div>
       </div>
     );

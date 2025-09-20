@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
-from backend.routes import dashboard, credits, challenges, auth, achievements, users, admin
+from backend.routes import dashboard, credits, challenges, auth, achievements, users, admin, mobility, ai_challenge
 from backend import database
 from backend.bedrock_logic import router as chat_router
 from backend.routes.statistics import router as statistics_router
 from backend.routes.websocket import router as websocket_router
+from backend.routes.database import router as database_router # Added database router import
 from backend.database import init_db, get_db, SessionLocal
 from backend.seed_admin_user import seed_admin_user
 
@@ -51,8 +52,10 @@ app.include_router(achievements.router)
 app.include_router(users.router)
 app.include_router(admin.router)
 app.include_router(chat_router)
-
+app.include_router(mobility.router) # Added mobility router
+app.include_router(database_router) # Corrected database router inclusion
 app.include_router(statistics_router)
+app.include_router(ai_challenge.router)
 
 @app.on_event("startup")
 async def startup_event():

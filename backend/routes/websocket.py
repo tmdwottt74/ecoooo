@@ -165,3 +165,4 @@ async def send_user_notification(user_id: int, title: str, message: str):
     }
     await manager.send_personal_message(json.dumps(notification), user_id)
 
+

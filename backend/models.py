@@ -52,6 +52,10 @@ class ChallengeScope(str, enum.Enum):
     PERSONAL = "PERSONAL"
     GROUP = "GROUP"
 
+class ChallengeCompletionType(str, enum.Enum):
+    MANUAL = "MANUAL"
+    AUTOMATIC = "AUTOMATIC"
+
 class NotificationStatus(str, enum.Enum):
     PENDING = "PENDING"
     SENT = "SENT"
@@ -176,8 +180,10 @@ class Challenge(Base):
     title = Column(String(100), nullable=False)
     description = Column(String(255))
     scope = Column(Enum(ChallengeScope), default=ChallengeScope.PERSONAL)
+    completion_type = Column(Enum(ChallengeCompletionType), default=ChallengeCompletionType.AUTOMATIC)
     target_mode = Column(Enum(TransportMode), default=TransportMode.ANY)
-    target_saved_g = Column(Integer, nullable=False)
+    target_saved_g = Column(Integer, nullable=True) # Make nullable
+    target_distance_km = Column(Numeric(10, 3), nullable=True) # New field
     start_at = Column(DateTime, nullable=False)
     end_at = Column(DateTime, nullable=False)
     reward = Column(String(255), nullable=True) # Add reward field

@@ -3,6 +3,7 @@ import { useUser } from './UserContext'; // Import useUser
 
 interface CreditsData {
   totalCredits: number;
+  accumulatedCredits: number; // 누적(획득) 크레딧
   totalCarbonReduced: number;
   recentEarned: number;
   lastUpdated: string;
@@ -37,7 +38,8 @@ export const getAuthHeaders = () => {
 export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useUser(); // Get user from UserContext
   const [creditsData, setCreditsData] = useState<CreditsData>({
-    totalCredits: 1240, // 기본값
+    totalCredits: 1240, // 총 크레딧 (잔액)
+    accumulatedCredits: 1240, // 누적 크레딧 (획득 총합)
     totalCarbonReduced: 12.4, // 기본값
     recentEarned: 0,
     lastUpdated: new Date().toISOString(),
@@ -56,24 +58,22 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
       setIsLoading(true);
       setError(null);
 
-      // localStorage에서 최근 업데이트된 값 확인
-      const storedTotal = localStorage.getItem('credits_total');
-      const storedUpdate = localStorage.getItem('credits_last_update');
-      
-      // 크레딧 잔액 가져오기
-      const creditsResponse = await fetch(`${API_URL}/api/credits/balance`, { headers: getAuthHeaders() });
+      // 크레딧 잔액, 정원, 모빌리티, 내역을 병렬로 가져오기
+      const [creditsResponse, gardenResponse, mobilityResponse, historyResponse] = await Promise.all([
+        fetch(`${API_URL}/api/credits/balance`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/api/credits/garden/${user.id}`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/api/credits/mobility/${user.id}?limit=1`, { headers: getAuthHeaders() }),
+        fetch(`${API_URL}/api/credits/history/${user.id}?limit=1000`, { headers: getAuthHeaders() }) // Fetch history
+      ]);
+
       if (!creditsResponse.ok) throw new Error('Failed to fetch credits');
       const creditsData = await creditsResponse.json();
 
-      // 정원 상태 가져오기
-      const gardenResponse = await fetch(`${API_URL}/api/credits/garden/${user.id}`, { headers: getAuthHeaders() });
       let gardenData = { total_carbon_reduced: 0 };
       if (gardenResponse.ok) {
         gardenData = await gardenResponse.json();
       }
 
-      // 최근 모빌리티 활동 가져오기
-      const mobilityResponse = await fetch(`${API_URL}/api/credits/mobility/${user.id}?limit=1`, { headers: getAuthHeaders() });
       let recentEarned = 0;
       if (mobilityResponse.ok) {
         const mobilityData = await mobilityResponse.json();
@@ -82,21 +82,20 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
       }
 
-      // localStorage에 저장된 값이 더 최신이면 그것을 우선 사용
-      let finalCredits = creditsData.total_points || 0;
-      if (storedTotal && storedUpdate) {
-        const storedTime = new Date(storedUpdate);
-        const serverTime = new Date();
-        const diffMinutes = (serverTime.getTime() - storedTime.getTime()) / (1000 * 60);
-        
-        // 5분 이내의 localStorage 데이터가 있으면 우선 사용
-        if (diffMinutes < 5) {
-          finalCredits = parseInt(storedTotal);
-        }
+      let accumulated = 0;
+      if (historyResponse.ok) {
+        const history = await historyResponse.json();
+        accumulated = history
+          .filter((tx: any) => tx.points > 0)
+          .reduce((sum: number, tx: any) => sum + tx.points, 0);
+        localStorage.setItem('credits_history', JSON.stringify(history)); // Save history to LS
       }
+
+      const finalCredits = creditsData.total_points || 0;
 
       const newCreditsData = {
         totalCredits: finalCredits,
+        accumulatedCredits: accumulated,
         totalCarbonReduced: gardenData.total_carbon_reduced || 0,
         recentEarned,
         lastUpdated: new Date().toISOString(),
@@ -108,6 +107,7 @@ export const CreditsProvider: React.FC<{ children: ReactNode }> = ({ children })
       localStorage.setItem('credits_total', newCreditsData.totalCredits.toString());
       localStorage.setItem('credits_carbon', newCreditsData.totalCarbonReduced.toString());
       localStorage.setItem('credits_last_update', new Date().toISOString());
+
     } catch (err) {
       console.error('Error fetching credits data:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');

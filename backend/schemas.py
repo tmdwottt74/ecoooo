@@ -23,6 +23,10 @@ class ChallengeScope(str, Enum):
     PERSONAL = "PERSONAL"
     GROUP = "GROUP"
 
+class ChallengeCompletionType(str, Enum):
+    MANUAL = "MANUAL"
+    AUTOMATIC = "AUTOMATIC"
+
 class GardenStatusEnum(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -173,6 +177,11 @@ class FrontendChallenge(BaseModel):
     progress: int # Percentage
     reward: Optional[str] = None
     is_joined: bool # New field
+    completion_type: Optional[ChallengeCompletionType] = None
+    completed_at: Optional[datetime] = None
+    target_mode: Optional[TransportMode] = None
+    target_saved_g: Optional[float] = None
+    target_distance_km: Optional[float] = None
 
 class ChallengeRecommendationRequest(BaseModel):
     user_id: int
@@ -362,5 +371,20 @@ class UserRanking(BaseModel):
     total_users: int
     percentile: float
     last_updated: datetime
+    class Config:
+        from_attributes = True
+
+class MobilityLogResponse(BaseModel):
+    log_id: int
+    user_id: int
+    mode: TransportMode
+    distance_km: float
+    started_at: datetime
+    ended_at: datetime
+    co2_saved_g: float
+    eco_credits_earned: int # Renamed from points_earned for clarity with frontend
+    description: Optional[str] = None
+    start_point: Optional[str] = None
+    end_point: Optional[str] = None
     class Config:
         from_attributes = True

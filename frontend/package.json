@@ -8,9 +8,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "@types/jest": "^27.5.2",
-    "@types/node": "^16.18.126",
-    "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.1.9",
+    "axios": "^1.12.2",
     "jsonpointer": "^5.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -44,6 +42,10 @@
     ]
   },
   "devDependencies": {
+    "@types/axios": "^0.9.36",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
     "@types/recharts": "^1.8.29"
   }
 }

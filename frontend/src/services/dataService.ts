@@ -2,11 +2,15 @@ const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
 
 // Fetch API 헬퍼 함수
 async function apiRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem('access_token');
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers,
+  };
+
   const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
     ...options,
   });
 

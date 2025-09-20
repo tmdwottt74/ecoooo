@@ -24,7 +24,7 @@ const ForgotPassword: React.FC = () => {
 
   if (isSubmitted) {
     return (
-      <div className="auth-container">
+      <div className="auth-container forgot-password-page">
         <div className="auth-background">
           <div className="auth-decoration">
             <div className="decoration-circle circle-1"></div>
@@ -35,12 +35,12 @@ const ForgotPassword: React.FC = () => {
         
         <div className="auth-card">
           <div className="auth-header">
-            <Link to="/" className="auth-logo">
+            <div className="auth-logo">
               <div className="logo-container">
                 <img src="/eco1-w.png" alt="ECO LIFE" className="logo-image" />
               </div>
               <p className="logo-tagline">환경 친화적인 생활을 위한 파라솔</p>
-            </Link>
+            </div>
             <h2>이메일을 확인해주세요</h2>
             <p>비밀번호 재설정 링크를 보내드렸습니다</p>
           </div>
@@ -68,7 +68,7 @@ const ForgotPassword: React.FC = () => {
   }
 
   return (
-    <div className="auth-container">
+    <div className="auth-container forgot-password-page">
       <div className="auth-background">
         <div className="auth-decoration">
           <div className="decoration-circle circle-1"></div>
@@ -79,12 +79,12 @@ const ForgotPassword: React.FC = () => {
       
       <div className="auth-card">
         <div className="auth-header">
-            <Link to="/" className="auth-logo">
-              <div className="logo-container">
-                <img src="/eco1-w.png" alt="ECO LIFE" className="logo-image" />
-              </div>
-              <p className="logo-tagline">환경 친화적인 생활을 위한 파라솔</p>
-            </Link>
+          <div className="auth-logo">
+            <div className="logo-container">
+              <img src="/eco1-w.png" alt="ECO LIFE" className="logo-image" />
+            </div>
+            <p className="logo-tagline">환경 친화적인 생활을 위한 파라솔</p>
+          </div>
           <h2>비밀번호 찾기</h2>
           <p>가입하신 이메일 주소를 입력해주세요</p>
         </div>

@@ -1,4 +1,55 @@
 /* ==============================
+   비밀번호 찾기 페이지 전용 스타일 (회원가입과 유사)
+   ============================== */
+.forgot-password-page {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%);
+}
+
+.forgot-password-page .auth-card {
+  border: 2px solid rgba(26, 188, 156, 0.2);
+  box-shadow: 0 25px 80px rgba(26, 188, 156, 0.15), 0 8px 32px rgba(26, 188, 156, 0.1);
+}
+
+.forgot-password-page .auth-card:hover {
+  box-shadow: 0 30px 100px rgba(26, 188, 156, 0.2), 0 12px 40px rgba(26, 188, 156, 0.15);
+}
+
+.forgot-password-page .decoration-circle {
+  background: linear-gradient(135deg, rgba(26, 188, 156, 0.1), rgba(16, 160, 133, 0.05));
+}
+
+.forgot-password-page h2 {
+  color: #1abc9c;
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.forgot-password-page .auth-btn.primary {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  box-shadow: 0 8px 25px rgba(26, 188, 156, 0.3);
+}
+
+.forgot-password-page .auth-btn.primary:hover {
+  background: linear-gradient(135deg, #16a085, #138d75);
+  box-shadow: 0 12px 35px rgba(26, 188, 156, 0.4);
+}
+
+.forgot-password-page .input-container input:focus {
+  border-color: #1abc9c;
+  box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
+}
+
+.forgot-password-page .auth-link {
+  color: #1abc9c;
+}
+
+.forgot-password-page .auth-link:hover {
+  color: #16a085;
+}
+
+/* ==============================
    인증 페이지 공통 스타일
    ============================== */
 .auth-container {

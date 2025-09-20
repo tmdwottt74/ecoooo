@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useCredits } from '../contexts/CreditsContext'; // Add this line
 import { useAuth } from '../contexts/AuthContext'; // Add this line
+import { useUser } from '../contexts/UserContext';
 import { getAuthHeaders } from '../contexts/CreditsContext'; // Add this line
 import "./Chat.css";
 /// <reference lib="dom" />
@@ -33,9 +34,10 @@ const Chat: React.FC = () => {
   const recognitionRef = useRef<SpeechRecognition | null>(null); // SpeechRecognition 인스턴스 참조
   const timeoutIdRef = useRef<NodeJS.Timeout | null>(null); // Timer for silence detection
 
-  const { creditsData } = useCredits(); // Get creditsData from context
-  const { user } = useAuth(); // Get user from context
-  const currentUserId = user?.id; // Get current user ID
+  const { creditsData, error: creditsError } = useCredits(); // Get creditsData and error from context
+  const { user: authUser } = useAuth(); // Get user from context
+  const { user } = useUser();
+  const currentUserId = authUser?.user_id; // Get current user ID
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -125,53 +127,63 @@ const Chat: React.FC = () => {
   // const userId = 1; // 예시 사용자 ID - currentUserId로 대체
 
   const userInfo = {
-    name: user?.name || "김에코", // 실제 로그인 사용자명으로 교체
+    name: authUser?.username || "김에코", // 실제 로그인 사용자명으로 교체
   };
 
   // ✅ 실제 데이터 기반 응답 핸들러
   const handleDashboardReply = async (
     intent: "절약량" | "포인트" | "정원" | "챌린지"
   ) => {
-    if (!currentUserId) {
-      setMessages((prev) => [...prev, { sender: "bot", text: "사용자 정보를 불러올 수 없습니다." }]);
-      setIsLoading(false); // Add this line to ensure loading state is reset
+    setIsLoading(true);
+
+    // Intents that can be answered from context
+    if (intent === "포인트" || intent === "절약량" || intent === "정원") {
+      setTimeout(() => {
+        if (creditsError) {
+          setMessages((prev) => [...prev, { sender: "bot", text: "서비스 수리 중입니다. 잠시 후 다시 시도해주세요." }]);
+        } else {
+          let botText = "";
+          if (intent === "포인트") {
+            const totalPoints = creditsData.totalCredits || 0;
+            botText = `현재 보유하고 계신 크레딧은 총 ${totalPoints.toLocaleString()}C 입니다 💰`;
+          } else if (intent === "절약량") {
+            const totalCarbon = creditsData.totalCarbonReduced || 0;
+            botText = `지금까지 총 ${totalCarbon.toFixed(1)} kg의 탄소(CO₂)를 절약하셨어요 🌱`;
+          } else { // 정원
+            const gardenLevel = user.gardenLevel || 0;
+            botText = `현재 정원 레벨은 Lv.${gardenLevel} 입니다 🌳`;
+          }
+          setMessages((prev) => [...prev, { sender: "bot", text: botText }]);
+        }
+        setIsLoading(false);
+      }, 500);
       return;
     }
 
-    setIsLoading(true);
-  console.log("Fetching dashboard data for userId:", currentUserId); // Add this line
-  console.log("API URL:", API_URL); // Add this line
-
+    // Fallback to fetch for intents that need it (e.g., 챌린지)
+    if (!currentUserId) {
+      setMessages((prev) => [...prev, { sender: "bot", text: "사용자 정보를 불러올 수 없습니다." }]);
+      setIsLoading(false);
+      return;
+    }
     try {
       const headers = getAuthHeaders();
-      console.log("Request headers:", headers); // 디버깅용
-      
       const response = await fetch(`${API_URL}/api/dashboard/`, {
         method: 'GET',
         headers: headers,
-        credentials: 'include', // 쿠키 포함
+        credentials: 'include',
       });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`Dashboard API error: ${response.status}`, errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const actualData: DashboardData = await response.json();
 
       let botText = "";
-
-      if (intent === "절약량") {
-        botText = `오늘은 ${actualData.co2_saved_today} g CO₂ 절약했고, 누적 절약량은 ${actualData.total_carbon_reduced} kg이에요 🌱\n\n💡 탄소 절감 팁:\n• 대중교통 이용하기\n• 자전거 타기\n• 에너지 절약하기\n• 친환경 제품 사용하기`;
-      } else if (intent === "포인트") {
-        botText = `지금까지 총 ${actualData.total_credits} 포인트를 모았어요 💰\n\n🎯 포인트 적립 방법:\n• 지하철 이용: +150P\n• 자전거 이용: +80P\n• 친환경 활동: +100P\n• 에너지 절약: +50P`;
-      } else if (intent === "정원") {
-        botText = `현재 정원 레벨은 Lv.${actualData.garden_level} 입니다 🌳\n\n🌱 정원 관리 팁:\n• 매일 물주기로 포인트 적립\n• 10번 물주기마다 레벨업\n• 다양한 식물로 정원 꾸미기\n• 친구들과 정원 공유하기`;
-      } else if (intent === "챌린지") {
+      if (intent === "챌린지") {
         const percent = Math.round((actualData.challenge_progress / actualData.challenge_goal) * 100);
-        botText = `🔥 현재 챌린지 진행 상황: 목표 ${actualData.challenge_goal} kg 중 ${actualData.challenge_progress} kg 달성 (${percent}%)\n\n🎉 목표까지 ${(actualData.challenge_goal - actualData.challenge_progress).toFixed(1)} kg 남았어요!\n\n💪 챌린지 완주를 위한 활동:\n• 대중교통 이용하기\n• 자전거 타기\n• 도보로 이동하기`;
+        botText = `🔥 현재 챌린지 진행 상황: 목표 ${actualData.challenge_goal} kg 중 ${actualData.challenge_progress} kg 달성 (${percent}%)\n\n🎉 목표까지 ${(actualData.challenge_goal - actualData.challenge_progress).toFixed(1)} kg 남았어요!`;
       }
-
       const botMessage: Message = { sender: "bot", text: botText };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
