@@ -36,6 +36,18 @@ C:/Users/coron/OneDrive/바탕 화면/2025.2-2/seoul25_AI_ht/gitHub/ecoooo_front
 └───README.md (현재 파일)
 ```
 
+(규리 새로 추가)
+statistics.py
+websocket.py
+config.py
+env_example.txt
+schemas.sql
+test_db.py
+DataManager. css, txt
+LoadingScreen. css, txt
+AppDataContext.tsx
+LoadingContext.tsx
+
 ## 프로젝트 설정 및 실행 방법
 
 프로젝트를 로컬에서 실행하려면 다음 단계를 따르십시오.
