@@ -2,7 +2,7 @@ from datetime import datetime
 import enum
 
 from sqlalchemy import (
-    Column, BigInteger, Enum, DateTime, Numeric, String, Integer, ForeignKey
+    Column, BigInteger, Enum, DateTime, Numeric, String, Integer, ForeignKey, Date
 )
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import relationship
@@ -35,6 +35,10 @@ class CreditType(str, enum.Enum):
     EARN = "EARN"
     SPEND = "SPEND"
     ADJUST = "ADJUST"
+
+class ChallengeCompletionType(str, enum.Enum):
+    AUTO = "AUTO"
+    MANUAL = "MANUAL"
 
 class ChallengeScope(str, enum.Enum):
     PERSONAL = "PERSONAL"
@@ -163,8 +167,10 @@ class Challenge(Base):
     title = Column(String(100), nullable=False)
     description = Column(String(255))
     scope = Column(Enum(ChallengeScope), default=ChallengeScope.PERSONAL)
+    completion_type = Column(Enum(ChallengeCompletionType), default=ChallengeCompletionType.AUTO)
     target_mode = Column(Enum(TransportMode), default=TransportMode.ANY)
-    target_saved_g = Column(Integer, nullable=False)
+    target_saved_g = Column(Numeric(12, 3), nullable=True, default=0)
+    target_distance_km = Column(Numeric(8, 3), nullable=True, default=0)
     start_at = Column(DateTime, nullable=False)
     end_at = Column(DateTime, nullable=False)
     reward = Column(String(255), nullable=True) # Add reward field
@@ -182,6 +188,7 @@ class ChallengeMember(Base):
     challenge_id = Column(BigInteger, ForeignKey("challenges.challenge_id"), primary_key=True)
     user_id = Column(BigInteger, ForeignKey("users.user_id"), primary_key=True)
     joined_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True) # Mark when a user completes a challenge
 
 # Achievements
 class Achievement(Base):
@@ -287,3 +294,16 @@ class GardenWateringLog(Base):
     
     # Relationships
     user = relationship("User", backref="watering_logs")
+
+# ---------------------------
+# REWARDED ACTIVITIES (For Chatbot)
+# ---------------------------
+class RewardedActivity(Base):
+    __tablename__ = 'rewarded_activities'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(BigInteger, ForeignKey('users.user_id'), nullable=False)
+    activity_type = Column(String(50), nullable=False)
+    reward_date = Column(Date, nullable=False, default=datetime.date)
+    bonus_credits = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+

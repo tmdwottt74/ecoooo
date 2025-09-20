@@ -23,6 +23,10 @@ class ChallengeScope(str, Enum):
     PERSONAL = "PERSONAL"
     GROUP = "GROUP"
 
+class ChallengeCompletionType(str, Enum):
+    AUTO = "AUTO"
+    MANUAL = "MANUAL"
+
 class GardenStatusEnum(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
@@ -139,12 +143,13 @@ class Challenge(BaseModel):
     challenge_id: int
     title: str
     description: Optional[str] = None
-    scope: str
-    target_mode: str
-    target_saved_g: int
+    scope: ChallengeScope
+    target_mode: TransportMode
+    target_saved_g: Optional[float] = None
+    target_distance_km: Optional[float] = None
     start_at: datetime
     end_at: datetime
-    reward: Optional[str] = None # Added reward field
+    reward: Optional[str] = None
     created_by: Optional[int] = None
     created_at: datetime
 
@@ -158,7 +163,8 @@ class ChallengeBase(BaseModel):
     description: Optional[str] = None
     scope: ChallengeScope
     target_mode: TransportMode
-    target_saved_g: int
+    target_saved_g: Optional[float] = None
+    target_distance_km: Optional[float] = None
     start_at: datetime
     end_at: datetime
     reward: Optional[str] = None
@@ -172,7 +178,12 @@ class FrontendChallenge(BaseModel):
     description: Optional[str] = None
     progress: int # Percentage
     reward: Optional[str] = None
-    is_joined: bool # New field
+    is_joined: bool
+    completion_type: ChallengeCompletionType
+    completed_at: Optional[datetime] = None
+    target_mode: TransportMode
+    target_saved_g: Optional[float] = None
+    target_distance_km: Optional[float] = None
 
 class ChallengeRecommendationRequest(BaseModel):
     user_id: int
@@ -180,7 +191,8 @@ class ChallengeRecommendationRequest(BaseModel):
     description: Optional[str] = None
     scope: ChallengeScope
     target_mode: TransportMode
-    target_saved_g: int
+    target_saved_g: Optional[float] = None
+    target_distance_km: Optional[float] = None
     start_at: datetime
     end_at: datetime
     reward: Optional[str] = None

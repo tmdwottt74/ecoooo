@@ -9,7 +9,6 @@
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%);
   position: relative;
   overflow: hidden;
-  padding: 20px;
 }
 
 .auth-background {
@@ -35,25 +34,25 @@
 }
 
 .circle-1 {
-  width: 200px;
-  height: 200px;
+  width: 14vw;
+  height: 14vw;
   top: 10%;
   left: 10%;
   animation-delay: 0s;
 }
 
 .circle-2 {
-  width: 150px;
-  height: 150px;
-  top: 60%;
+  width: 10vw;
+  height: 10vw;
+  top: 65%;
   right: 15%;
   animation-delay: 2s;
 }
 
 .circle-3 {
-  width: 100px;
-  height: 100px;
-  top: 30%;
+  width: 7vw;
+  height: 7vw;
+  top: 35%;
   right: 30%;
   animation-delay: 4s;
 }
