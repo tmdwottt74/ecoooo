@@ -174,9 +174,6 @@ class FrontendChallenge(BaseModel):
     reward: Optional[str] = None
     is_joined: bool # New field
 
-    is_joined: bool # New field
-
-
 class ChallengeRecommendationRequest(BaseModel):
     user_id: int
     title: str
