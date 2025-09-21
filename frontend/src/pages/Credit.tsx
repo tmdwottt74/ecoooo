@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useCredits } from '../contexts/CreditsContext';
-import { useAuth } from '../contexts/AuthContext';
-import { getAuthHeaders } from '../contexts/CreditsContext';
 import PageHeader from '../components/PageHeader';
 import "./Credit.css";
 
@@ -29,10 +27,6 @@ const fetchRecentActivity = async () => {
 
 const Credit: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const API_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000";
-
   const isPreview = new URLSearchParams(location.search).get("preview") === "1";
   const tabParam = new URLSearchParams(location.search).get("tab");
   const { creditsData, getCreditsHistory } = useCredits();
@@ -116,19 +110,12 @@ const Credit: React.FC = () => {
 
   // 교통수단 이용내역 가져오기
   const loadTransportHistory = async () => {
-    if (!user?.id) return;
     setTransportLoading(true);
     try {
-      const response = await fetch(`${API_URL}/api/credits/mobility/${user.id}`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await fetch('http://127.0.0.1:8001/api/transport/history/1');
       if (response.ok) {
         const history = await response.json();
         setTransportHistory(history);
-      } else {
-        // Handle non-OK responses if needed
-        console.error('Failed to fetch transport history:', response.statusText);
-        setTransportHistory([]); // Clear history on failure
       }
     } catch (error) {
       console.error('Error loading transport history:', error);
@@ -179,6 +166,52 @@ const Credit: React.FC = () => {
     totalCredits: creditsData.totalCredits,
     totalSaving: `${creditsData.totalCarbonReduced}kg CO₂`,
   };
+
+  const creditHistory = [
+    { id: 1, date: "2025-01-15", desc: "지하철 이용 7.5km", credits: "+150", co2: "1,132g 절약" },
+    { id: 2, date: "2025-01-15", desc: "버스 이용 4.0km", credits: "+80", co2: "348g 절약" },
+    { id: 3, date: "2025-01-14", desc: "자전거 이용 3.2km", credits: "+100", co2: "256g 절약" },
+    // ... (생략) ...
+    { id: 25, date: "2025-01-03", desc: "지하철 이용 6.7km", points: "+135", co2: "1,010g 절약" },
+  ];
+
+  // 미리보기 모드
+  if (isPreview) {
+    return (
+      <div className="credit-preview">
+        <div className="preview-header">
+          <h3>💰 크레딧 현황</h3>
+        </div>
+        <div className="preview-user-info">
+          <div className="preview-user-avatar">🌱</div>
+          <div className="preview-user-details">
+            <div className="preview-user-name">{userInfo.name} 님</div>
+            <div className="preview-user-group">{userInfo.group}</div>
+          </div>
+        </div>
+        <div className="preview-stats">
+          <div className="preview-stat">
+            <span className="stat-label">누적 크레딧</span>
+            <span className="stat-value">{userInfo.totalCredits}P</span>
+          </div>
+          <div className="preview-stat">
+            <span className="stat-label">누적 절감량</span>
+            <span className="stat-value">{userInfo.totalSaving}</span>
+          </div>
+        </div>
+        <div className="preview-recent">
+          <div className="recent-item">
+            <span className="recent-icon">🚌</span>
+            <span className="recent-text">지하철 이용 +150C</span>
+          </div>
+          <div className="recent-item">
+            <span className="recent-icon">🚲</span>
+            <span className="recent-text">자전거 이용 +80C</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="credit-container">
@@ -242,7 +275,7 @@ const Credit: React.FC = () => {
           {/* AI 챗봇 안내 */}
           <div 
             className="simple-chat-notice"
-            onClick={() => navigate('/chat')}
+            onClick={() => window.location.href = '/chat'}
           >
             <div className="chat-icon">🤖</div>
             <div className="chat-content">

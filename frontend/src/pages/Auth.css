@@ -63,6 +63,7 @@
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%);
   position: relative;
   overflow: hidden;
+  padding: 20px;
 <<<<<<< HEAD
 =======
   padding: 20px;
@@ -92,42 +93,25 @@
 }
 
 .circle-1 {
-<<<<<<< HEAD
-  width: 14vw;
-  height: 14vw;
-=======
   width: 200px;
   height: 200px;
->>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   top: 10%;
   left: 10%;
   animation-delay: 0s;
 }
 
 .circle-2 {
-<<<<<<< HEAD
-  width: 10vw;
-  height: 10vw;
-  top: 65%;
-=======
   width: 150px;
   height: 150px;
   top: 60%;
->>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   right: 15%;
   animation-delay: 2s;
 }
 
 .circle-3 {
-<<<<<<< HEAD
-  width: 7vw;
-  height: 7vw;
-  top: 35%;
-=======
   width: 100px;
   height: 100px;
   top: 30%;
->>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   right: 30%;
   animation-delay: 4s;
 }

@@ -419,14 +419,6 @@
   color: white; transform: translateY(-2px);
 }
 
-.quick-question-btn:hover {
-  background: linear-gradient(135deg, #1abc9c, #16a085);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(26, 188, 156, 0.3);
-  border-color: transparent;
-}
-
 /* ==============================
    입력 영역 + 음성 버튼
    ============================== */
