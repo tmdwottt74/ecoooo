@@ -5,9 +5,10 @@ interface PageHeaderProps {
   title: string;
   subtitle?: string;
   icon?: string;
+  actions?: React.ReactNode;
 }
 
-const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, icon }) => {
+const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, icon, actions }) => {
   return (
     <div className="page-header">
       <div className="page-header-content">
@@ -18,6 +19,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, subtitle, icon }) => {
           <h1 className="page-title">{title}</h1>
           {subtitle && <p className="page-subtitle">{subtitle}</p>}
         </div>
+        {actions && (
+          <div className="page-header-actions">
+            {actions}
+          </div>
+        )}
       </div>
     </div>
   );

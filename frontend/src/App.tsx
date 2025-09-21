@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Link, useLocation, useNavigate } from "react-router-dom";
+import { Routes, Route, Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import "./App.css";
 import DashboardPage from "./pages/DashboardPage";
 import NewsTicker from "./components/NewsTicker";
@@ -14,12 +14,16 @@ import { GardenProvider, GardenWithChat } from "./components/GardenChatIntegrati
 import { CreditsProvider } from "./contexts/CreditsContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { UserProvider } from "./contexts/UserContext";
-import HowToService from "./components/HowToService";
+import { AppDataProvider } from "./contexts/AppDataContext";
+import { LoadingProvider, useLoading } from "./contexts/LoadingContext";
 import HowTo from "./pages/HowTo";
 import HowToPopup from "./components/HowToPopup";
+import DataManager from "./components/DataManager";
 import UserInfo from "./pages/UserInfo";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import ForgotPassword from "./pages/ForgotPassword";
+import MobilityTrackingPage from "./pages/MobilityTrackingPage";
 import Sidebar from "./components/Sidebar";
 import { ChatPreview, CreditPreview, GardenPreview } from "./components/PreviewComponents";
 import Achievements from './pages/Achievements'; // New
@@ -32,57 +36,78 @@ import MobilityTrackingPage from './pages/MobilityTrackingPage'; // New Mobility
 
 
 // 로고 컴포넌트
-const Logo: React.FC = () => (
-  <h1 className="logo">
-    <Link to="/" style={{ textDecoration: "none", color: "inherit" }}>
-      ECO 🌱 LIFE
-    </Link>
-  </h1>
-);
+const Logo: React.FC = () => {
+  const navigate = useNavigate();
+  
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // 로그인 상태와 관계없이 항상 홈화면으로 이동
+    navigate('/home');
+  };
+
+  return (
+    <div className="logo">
+      <a 
+        href="#" 
+        onClick={handleLogoClick}
+        style={{ textDecoration: "none", color: "inherit" }}
+      >
+        <span className="logo-text">🌱 ECO LIFE</span>
+      </a>
+    </div>
+  );
+};
 
 function AppContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
   const [showHowToPopup, setShowHowToPopup] = useState(false);
+  const [showDataManager, setShowDataManager] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const { showLoading, hideLoading } = useLoading();
   const location = useLocation();
   const navigate = useNavigate();
   const isPreview = new URLSearchParams(location.search).get("preview") === "1";
 
-  // 페이지 이동 시 스크롤을 맨 위로 이동
+  // 디버깅을 위한 인증 상태 로그
   useEffect(() => {
+    console.log('인증 상태:', { isAuthenticated, user, pathname: location.pathname });
+  }, [isAuthenticated, user, location.pathname]);
+
+ // 페이지 이동 시 스크롤을 맨 위로 이동
+   useEffect(() => {
     // 즉시 스크롤 초기화
     window.scrollTo(0, 0);
-    // 추가로 document 요소도 초기화
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
-    
-    // 모든 스크롤 가능한 요소도 초기화
+
     const scrollableElements = document.querySelectorAll('[style*="overflow"], .scrollable, .content');
     scrollableElements.forEach(element => {
       if (element instanceof HTMLElement) {
         element.scrollTop = 0;
       }
     });
-  }, [location.pathname, location.search]); // search 파라미터 변경 시에도 스크롤 초기화
+  }, [location.pathname, location.search]); // ✅ 여기서 useEffect 끝나야 정상
 
-  // 홈 화면 접속 시 How to Use 팝업 표시
+
+  // 세션 첫 로그인 시 팝업 표시
   useEffect(() => {
-    if (location.pathname === "/" && !isPreview) {
-      const today = new Date().toDateString();
-      const dontShowToday = localStorage.getItem('howto-dont-show-today');
-      
-      if (dontShowToday !== today) {
-        // 1초 후 팝업 표시 (페이지 로딩 완료 후)
-        const timer = setTimeout(() => {
-          setShowHowToPopup(true);
-        }, 1000);
-        
-        return () => clearTimeout(timer);
-      }
+    const isFirstLogin = sessionStorage.getItem('isFirstLoginInSession') === 'true';
+
+    // 최초 로그인 시에는 "다시 보지 않기"와 상관없이 무조건 팝업 표시
+    if (isFirstLogin && location.pathname === '/home') {
+      setShowHowToPopup(true);
+      sessionStorage.removeItem('isFirstLoginInSession'); // 플래그 사용 후 제거
     }
-  }, [location.pathname, isPreview]);
+  }, [isAuthenticated, location.pathname]);
+
+  // 다른 페이지로 이동 시 팝업 닫기
+  useEffect(() => {
+    if (location.pathname !== '/home' && showHowToPopup) {
+      setShowHowToPopup(false);
+    }
+  }, [location.pathname, showHowToPopup]);
 
   // 서비스 검색 데이터 ✅ (App 함수 안에만 유지)
   const serviceItems = [
@@ -131,16 +156,17 @@ function AppContent() {
   // 인증 페이지인지 확인
   const isAuthPage = location.pathname === "/login" || location.pathname === "/signup";
   
-  // 인증이 필요한 페이지인지 확인 (홈페이지는 제외)
-  const protectedPages = ["/dashboard", "/chat", "/mygarden", "/credit", "/challenge-achievements", "/user-info"];
+  // 인증이 필요한 페이지인지 확인
+  const protectedPages = ["/home", "/user-info", "/dashboard", "/chat", "/credit", "/mygarden", "/challenge-achievements", "/mobility-tracking"];
   const isProtectedPage = protectedPages.includes(location.pathname);
   
   // 인증되지 않은 사용자가 보호된 페이지에 접근하려 할 때 로그인 페이지로 리다이렉트
   useEffect(() => {
     if (!isAuthenticated && isProtectedPage && !isPreview) {
+      console.log('보호된 페이지 접근 시도:', location.pathname);
       navigate('/login');
     }
-  }, [isAuthenticated, isProtectedPage, isPreview, navigate]);
+  }, [isAuthenticated, isProtectedPage, isPreview, navigate, location.pathname]);
 
   // 처음 접속하거나 F5를 눌렀을 때 로그인되지 않은 상태면 로그인 페이지로 이동
   useEffect(() => {
@@ -149,22 +175,38 @@ function AppContent() {
     }
   }, [isAuthenticated, isAuthPage, isPreview, location.pathname, navigate]);
 
+  // 로그인된 사용자가 루트(/)에 접근하면 홈화면으로 리다이렉트
+  useEffect(() => {
+    if (isAuthenticated && location.pathname === '/') {
+      navigate('/home');
+    }
+  }, [isAuthenticated, location.pathname, navigate]);
+
+
   return (
     <div className="App">
-      {!isPreview && !isAuthPage && <Sidebar />}
-      
-      {!isPreview && !isAuthPage && (
-        <header className="main-header">
+      <> {/* Added Fragment start */}
+        {!isPreview && !isAuthPage && <Sidebar />}
+        
+        {!isPreview && !isAuthPage && (
+          <header className="main-header">
           <div className="header-content">
             <div className="header-left">
               <Link to="/user-info" className="user-info-link">
                 <div className="user-info">
-                  <span className="user-name">{user?.name || '김에코'}</span>
-                  <span className="user-role">{user?.role || '사용자'}</span>
+                  <span className="user-name">{user?.username || 'admin'}</span>
+                  <span className="user-role">ADMIN</span>
                 </div>
               </Link>
             </div>
             <div className="header-right">
+              <button 
+                className="data-manager-btn"
+                onClick={() => setShowDataManager(true)}
+                title="데이터 관리자"
+              >
+                <span className="data-manager-icon">🗄️</span>
+              </button>
               <button 
                 className="logout-btn"
                 onClick={logout}
@@ -178,156 +220,161 @@ function AppContent() {
         </header>
       )}
 
-      <main className={!isPreview && !isAuthPage ? "with-sidebar" : ""}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                {/* How to Use 팝업 */}
-                <HowToPopup 
-                  isOpen={showHowToPopup} 
-                  onClose={() => setShowHowToPopup(false)} 
-                />
-
-                <section id="hero" className="hero-section">
-                  <div className="hero-content">
-                    <h1 className="hero-title">
-                      🌱 AI와 함께하는 친환경 생활
-                    </h1>
-                    <p className="hero-subtitle">
-                      실시간 이동 인식으로 크레딧을 적립하고,<br/>AI 챗봇과 함께 지속가능한 미래를 만들어가세요
-                    </p>
-                    <div className="hero-features">
-                      <div className="feature-card">
-                        <div className="feature-icon">🤖</div>
-                        <h3>AI 챗봇</h3>
-                        <p>환경 친화적인 생활을 위한<br/>개인 맞춤 상담</p>
-                        <Link to="/chat" className="feature-btn">챗봇 시작하기</Link>
-                      </div>
-                      <div className="feature-card">
-                        <div className="feature-icon">🚶‍♀️</div>
-                        <h3>실시간 크레딧</h3>
-                        <p>도보, 자전거, 대중교통 이용 시<br/>자동으로 크레딧 적립</p>
-                        <Link to="/credit" className="feature-btn">크레딧 확인</Link>
-                      </div>
-                      <div className="feature-card">
-                        <div className="feature-icon">🌿</div>
-                        <h3>나만의 정원</h3>
-                        <p>적립한 크레딧으로<br/>가상 정원을 꾸며보세요</p>
-                        <Link to="/mygarden" className="feature-btn">정원 가기</Link>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="hero-bg" />
-                </section>
-
-                <section className="news-ticker-section">
-                  <NewsTicker news={newsItems} />
-                </section>
-
-                <section id="service" className="content-section service-experience-section">
-                  <div className="container">
-                    <div className="section-header text-center">
-                      <h2>서비스 체험</h2>
-                      <p className="subtitle">
-                        AI 챗봇, 크레딧 현황, 나만의 정원을 통해 탄소 절감 활동을 직접 경험해보세요.
-                      </p>
-                    </div>
-                    <div className="service-grid">
-                      <div className="service-card">
-                        <h3>🤖 AI 챗봇</h3>
-                        <div className="preview-frame">
-                          <ChatPreview />
-                        </div>
-                        <Link to="/chat" className="detail-btn">
-                          자세히
-                        </Link>
-                      </div>
-                      <div className="service-card">
-                        <h3>💰 크레딧 현황</h3>
-                        <div className="preview-frame">
-                          <CreditPreview />
-                        </div>
-                        <Link to="/credit" className="detail-btn">
-                          자세히
-                        </Link>
-                      </div>
-                      <div className="service-card">
-                        <h3>🌿 나만의 정원</h3>
-                        <div className="preview-frame">
-                          <GardenPreview />
-                        </div>
-                        <Link to="/mygarden" className="detail-btn">
-                          자세히
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="search-section">
-                  <div className="container">
-                    <div className="search-container">
-                      <h2 className="search-title">서비스 검색</h2>
-                      <p className="search-subtitle">원하는 서비스를 빠르게 찾아보세요</p>
-
-                      <div className="search-input-container">
-                        <input
-                          type="text"
-                          placeholder="서비스를 검색하세요 (예: 포인트, 정원, 챗봇...)"
-                          value={searchQuery}
-                          onChange={(e) => handleSearch(e.target.value)}
-                          className="search-input"
-                        />
-                        {searchQuery && (
-                          <button onClick={clearSearch} className="search-clear">
-                            ✕
-                          </button>
-                        )}
-                      </div>
-
-                      {showSearchResults && (
-                        <div className="search-results">
-                          <div className="results-header">
-                            <h3>검색 결과</h3>
-                            <span className="results-count">{searchResults.length}개 서비스</span>
+            <main className={!isPreview && !isAuthPage ? "with-sidebar" : ""}>
+              <Routes>
+                <Route path="/" element={isAuthenticated ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} />
+                <Route
+                  path="/home"
+                  element={
+                    <>
+                      {/* How to Use 팝업 */}
+                      <HowToPopup
+                        isOpen={showHowToPopup}
+                        onClose={() => setShowHowToPopup(false)}
+                      />
+      
+                      <section id="hero" className="hero-section">
+                        <div className="hero-content">
+                          <h1 className="hero-title">
+                            🌱 AI와 함께하는 친환경 생활
+                          </h1>
+                          <p className="hero-subtitle">
+                            실시간 이동 인식으로 크레딧을 적립하고,<br/>AI 챗봇과 함께 지속가능한 미래를 만들어가세요
+                          </p>
+                          <div className="hero-features">
+                            <div className="feature-card">
+                              <div className="feature-icon">🤖</div>
+                              <h3>AI 챗봇</h3>
+                              <p>환경 친화적인 생활을 위한<br/>개인 맞춤 상담</p>
+                              <Link to="/chat" className="feature-btn">챗봇 시작하기</Link>
+                            </div>
+                            <div className="feature-card">
+                              <div className="feature-icon">🚶‍♀️</div>
+                              <h3>실시간 크레딧</h3>
+                              <p>도보, 자전거, 대중교통 이용 시<br/>자동으로 크레딧 적립</p>
+                              <Link to="/credit" className="feature-btn">크레딧 확인</Link>
+                            </div>
+                            <div className="feature-card">
+                              <div className="feature-icon">🌿</div>
+                              <h3>나만의 정원</h3>
+                              <p>적립한 크레딧으로<br/>가상 정원을 꾸며보세요</p>
+                              <Link to="/mygarden" className="feature-btn">정원 가기</Link>
+                            </div>
                           </div>
-
-                          {searchResults.length > 0 ? (
-                            <div className="results-list">
-                              {searchResults.map((item) => (
-                                <Link key={item.id} to={item.path} className="result-item">
-                                  <div className="result-icon">{item.icon}</div>
-                                  <div className="result-content">
-                                    <h4 className="result-title">{item.title}</h4>
-                                    <p className="result-description">{item.description}</p>
+                        </div>
+                        <div className="hero-bg" />
+                      </section>
+      
+                      <section className="news-ticker-section">
+                        <NewsTicker news={newsItems} />
+                      </section>
+      
+                      <section id="service" className="content-section service-experience-section">
+                        <div className="container">
+                          <div className="section-header text-center">
+                            <h2>서비스 체험</h2>
+                            <p className="subtitle">
+                              AI 챗봇, 크레딧 현황, 나만의 정원을 통해 탄소 절감 활동을 직접 경험해보세요.
+                            </p>
+                          </div>
+                          <div className="service-grid">
+                            <div className="service-card">
+                              <h3>🤖 AI 챗봇</h3>
+                              <div className="preview-frame">
+                                <ChatPreview />
+                              </div>
+                              <Link to="/chat" className="detail-btn">
+                                자세히
+                              </Link>
+                            </div>
+                            <div className="service-card">
+                              <h3>💰 크레딧 현황</h3>
+                              <div className="preview-frame">
+                                <CreditPreview />
+                              </div>
+                              <Link to="/credit" className="detail-btn">
+                                자세히
+                              </Link>
+                            </div>
+                            <div className="service-card">
+                              <h3>🌿 나만의 정원</h3>
+                              <div className="preview-frame">
+                                <GardenPreview />
+                              </div>
+                              <Link to="/mygarden" className="detail-btn">
+                                자세히
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </section>
+      
+                      <section className="search-section">
+                        <div className="container">
+                          <div className="search-container">
+                            <h2 className="search-title">서비스 검색</h2>
+                            <p className="search-subtitle">원하는 서비스를 빠르게 찾아보세요</p>
+      
+                            <div className="search-input-container">
+                              <input
+                                type="text"
+                                placeholder="서비스를 검색하세요 (예: 포인트, 정원, 챗봇...)"
+                                value={searchQuery}
+                                onChange={(e) => handleSearch(e.target.value)}
+                                className="search-input"
+                              />
+                              {searchQuery && (
+                                <button onClick={clearSearch} className="search-clear">
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+      
+                            {showSearchResults && (
+                              <div className="search-results">
+                                <div className="results-header">
+                                  <h3>검색 결과</h3>
+                                  <span className="results-count">{searchResults.length}개 서비스</span>
+                                </div>
+      
+                                {searchResults.length > 0 ? (
+                                  <div className="results-list">
+                                    {searchResults.map((item) => (
+                                      <Link key={item.id} to={item.path} className="result-item">
+                                        <div className="result-icon">{item.icon}</div>
+                                        <div className="result-content">
+                                          <h4 className="result-title">{item.title}</h4>
+                                          <p className="result-description">{item.description}</p>
+                                        </div>
+                                        <div className="result-arrow">{">"}</div>
+                                      </Link>
+                                    ))}
                                   </div>
-                                  <div className="result-arrow">{">"}</div>
-                                </Link>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="no-results">
-                              <div className="no-results-icon">🔍</div>
-                              <p className="no-results-text">검색 결과가 없습니다</p>
-                              <p className="no-results-suggestion">다른 키워드로 검색해보세요</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {!showSearchResults && (
-                        <div className="popular-searches">
-                          <h3 className="popular-title">인기 검색어</h3>
-                          <div className="popular-tags">
-                            {["포인트", "정원", "챗봇", "대시보드", "챌린지", "업적", "탄소절감"].map((tag) => (
-                              <button key={tag} onClick={() => handleSearch(tag)} className="popular-tag">
-                                {tag}
-                              </button>
-                            ))}
+                                ) : (
+                                  <div className="no-results">
+                                    <div className="no-results-icon">🔍</div>
+                                    <p className="no-results-text">검색 결과가 없습니다</p>
+                                    <p className="no-results-suggestion">다른 키워드로 검색해보세요</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+      
+                            {!showSearchResults && (
+                              <div className="popular-searches">
+                                <h3 className="popular-title">인기 검색어</h3>
+                                <div className="popular-tags">
+                                  {["포인트", "정원", "챗봇", "대시보드", "챌린지", "업적", "탄소절감"].map((tag) => (
+                                    <button key={tag} onClick={() => handleSearch(tag)} className="popular-tag">
+                                      {tag}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
+<<<<<<< HEAD
                       )}
                     </div>
                   </div>
@@ -357,6 +404,33 @@ function AppContent() {
           <Route path="/mobility-tracking" element={<MobilityTrackingPage />} /> {/* New Mobility Tracking Route */}
         </Routes>
       </main>
+=======
+                      </section>
+                    </>
+                  }
+                />
+                <Route path="/about" element={<About />} />
+                <Route path="/chat" element={<Chat />} />
+                <Route path="/mygarden" element={<MyGarden />} />
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/challenge-achievements" element={<ChallengeAchievements />} />
+                <Route path="/credit" element={<Credit />} />
+                <Route path="/notice" element={<Notice />} />
+                <Route path="/user-info" element={<UserInfo />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/howto" element={<HowTo />} />
+                <Route path="/gardenchat" element={<GardenWithChat />} />
+                {/* Authentication Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<Signup />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/mobility-tracking" element={<MobilityTrackingPage />} />
+              </Routes>
+            </main>
+      {/* 인증 페이지들 - 독립적으로 표시 */}
+      {/* 이 부분은 이제 메인 Routes 블록으로 통합되었으므로 제거됩니다. */}
+      
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
       {!isPreview && location.pathname !== "/chat" && (
         <footer id="contact" className="main-footer-section">
@@ -369,6 +443,17 @@ function AppContent() {
           </div>
         </footer>
       )}
+
+      {/* HowTo 팝업 */}
+      {showHowToPopup && (
+        <HowToPopup isOpen={showHowToPopup} onClose={() => setShowHowToPopup(false)} />
+      )}
+
+      {/* 데이터 관리자 */}
+      {showDataManager && (
+        <DataManager isOpen={showDataManager} onClose={() => setShowDataManager(false)} />
+      )}
+      </> {/* Added Fragment end */}
     </div>
   );
 }
@@ -379,7 +464,11 @@ function App() {
       <UserProvider>
         <CreditsProvider>
           <GardenProvider>
-            <AppContent />
+            <LoadingProvider>
+              <AppDataProvider>
+                <AppContent />
+              </AppDataProvider>
+            </LoadingProvider>
           </GardenProvider>
         </CreditsProvider>
       </UserProvider>

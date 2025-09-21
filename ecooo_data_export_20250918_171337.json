@@ -1,0 +1,578 @@
+{
+  "achievements": [
+    {
+      "achievement_id": 1,
+      "code": "first_credit",
+      "title": "첫 걸음",
+      "description": "첫 번째 크레딧을 획득했습니다"
+    },
+    {
+      "achievement_id": 2,
+      "code": "eco_guardian",
+      "title": "환경 지킴이",
+      "description": "10번의 친환경 활동을 완료했습니다"
+    },
+    {
+      "achievement_id": 3,
+      "code": "transit_master",
+      "title": "대중교통 마스터",
+      "description": "50번의 대중교통 이용을 완료했습니다"
+    },
+    {
+      "achievement_id": 4,
+      "code": "gardener",
+      "title": "정원사",
+      "description": "정원에 10번 물을 주었습니다"
+    },
+    {
+      "achievement_id": 5,
+      "code": "carbon_saver",
+      "title": "탄소 절약왕",
+      "description": "100kg의 탄소를 절약했습니다"
+    }
+  ],
+  "carbon_factors": [
+    {
+      "factor_id": 1,
+      "mode": "BUS",
+      "g_per_km": 89.0,
+      "valid_from": "2024-01-01",
+      "valid_to": "9999-12-31 23:59:59"
+    },
+    {
+      "factor_id": 2,
+      "mode": "SUBWAY",
+      "g_per_km": 22.0,
+      "valid_from": "2024-01-01",
+      "valid_to": "9999-12-31 23:59:59"
+    },
+    {
+      "factor_id": 3,
+      "mode": "BIKE",
+      "g_per_km": 0.0,
+      "valid_from": "2024-01-01",
+      "valid_to": "9999-12-31 23:59:59"
+    },
+    {
+      "factor_id": 4,
+      "mode": "WALK",
+      "g_per_km": 0.0,
+      "valid_from": "2024-01-01",
+      "valid_to": "9999-12-31 23:59:59"
+    },
+    {
+      "factor_id": 5,
+      "mode": "CAR",
+      "g_per_km": 192.0,
+      "valid_from": "2024-01-01",
+      "valid_to": "9999-12-31 23:59:59"
+    }
+  ],
+  "challenges": [
+    {
+      "challenge_id": 1,
+      "title": "일일 대중교통 챌린지",
+      "description": "오늘 대중교통을 이용해보세요",
+      "scope": "PERSONAL",
+      "target_mode": "SUBWAY",
+      "target_saved_g": 1000,
+      "start_at": "2024-01-01",
+      "end_at": "2024-12-31",
+      "created_at": "2025-09-17 16:37:08"
+    },
+    {
+      "challenge_id": 2,
+      "title": "주간 친환경 이동 챌린지",
+      "description": "일주일 동안 친환경 교통수단을 이용하세요",
+      "scope": "PERSONAL",
+      "target_mode": "ANY",
+      "target_saved_g": 5000,
+      "start_at": "2024-01-01",
+      "end_at": "2024-12-31",
+      "created_at": "2025-09-17 16:37:08"
+    },
+    {
+      "challenge_id": 3,
+      "title": "월간 탄소 절감 챌린지",
+      "description": "한 달 동안 20kg의 탄소를 절감하세요",
+      "scope": "PERSONAL",
+      "target_mode": "ANY",
+      "target_saved_g": 20000,
+      "start_at": "2024-01-01",
+      "end_at": "2024-12-31",
+      "created_at": "2025-09-17 16:37:08"
+    }
+  ],
+  "credits_ledger": [
+    {
+      "entry_id": 75,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 0,
+      "reason": "회원가입 보너스",
+      "meta_json": "{\"type\": \"signup_bonus\"}",
+      "created_at": "2024-01-01 00:00:00"
+    },
+    {
+      "entry_id": 76,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 140,
+      "reason": "지하철 이용 (강남역 → 홍대입구역)",
+      "meta_json": "{\"activity\": \"subway\", \"distance\": 8.5, \"co2_saved\": 150}",
+      "created_at": "2024-01-15 08:30:00"
+    },
+    {
+      "entry_id": 77,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 80,
+      "reason": "자전거 이용 (30분)",
+      "meta_json": "{\"activity\": \"bicycle\", \"duration\": 30, \"co2_saved\": 80}",
+      "created_at": "2024-01-15 18:30:00"
+    },
+    {
+      "entry_id": 78,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 50,
+      "reason": "도보 이동 (15분)",
+      "meta_json": "{\"activity\": \"walking\", \"duration\": 15, \"co2_saved\": 50}",
+      "created_at": "2024-01-15 19:15:00"
+    },
+    {
+      "entry_id": 79,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 100,
+      "reason": "지하철 이용 (홍대입구역 → 강남역)",
+      "meta_json": "{\"activity\": \"subway\", \"distance\": 8.5, \"co2_saved\": 100}",
+      "created_at": "2024-01-16 09:00:00"
+    },
+    {
+      "entry_id": 80,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 120,
+      "reason": "버스 이용 (강남역 → 신논현역)",
+      "meta_json": "{\"activity\": \"bus\", \"distance\": 2.1, \"co2_saved\": 120}",
+      "created_at": "2024-01-16 18:00:00"
+    },
+    {
+      "entry_id": 81,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 100,
+      "reason": "일일 챌린지 완료",
+      "meta_json": "{\"challenge_type\": \"daily\", \"challenge_id\": 1}",
+      "created_at": "2024-01-16 23:59:00"
+    },
+    {
+      "entry_id": 82,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 150,
+      "reason": "주간 챌린지 완료",
+      "meta_json": "{\"challenge_type\": \"weekly\", \"challenge_id\": 2}",
+      "created_at": "2024-01-21 23:59:00"
+    },
+    {
+      "entry_id": 83,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 1}",
+      "created_at": "2024-01-17 10:00:00"
+    },
+    {
+      "entry_id": 84,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 2}",
+      "created_at": "2024-01-18 10:00:00"
+    },
+    {
+      "entry_id": 85,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 3}",
+      "created_at": "2024-01-19 10:00:00"
+    },
+    {
+      "entry_id": 86,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 4}",
+      "created_at": "2024-01-20 10:00:00"
+    },
+    {
+      "entry_id": 87,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 5}",
+      "created_at": "2024-01-21 10:00:00"
+    },
+    {
+      "entry_id": 88,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 6}",
+      "created_at": "2024-01-22 10:00:00"
+    },
+    {
+      "entry_id": 89,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 7}",
+      "created_at": "2024-01-23 10:00:00"
+    },
+    {
+      "entry_id": 90,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 100,
+      "reason": "지하철 이용 (신논현역 → 강남역)",
+      "meta_json": "{\"activity\": \"subway\", \"distance\": 2.1, \"co2_saved\": 100}",
+      "created_at": "2024-01-24 08:00:00"
+    },
+    {
+      "entry_id": 91,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 80,
+      "reason": "자전거 이용 (20분)",
+      "meta_json": "{\"activity\": \"bicycle\", \"duration\": 20, \"co2_saved\": 80}",
+      "created_at": "2024-01-24 18:00:00"
+    },
+    {
+      "entry_id": 92,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 50,
+      "reason": "도보 이동 (10분)",
+      "meta_json": "{\"activity\": \"walking\", \"duration\": 10, \"co2_saved\": 50}",
+      "created_at": "2024-01-24 19:00:00"
+    },
+    {
+      "entry_id": 93,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 120,
+      "reason": "버스 이용 (강남역 → 역삼역)",
+      "meta_json": "{\"activity\": \"bus\", \"distance\": 1.8, \"co2_saved\": 120}",
+      "created_at": "2024-01-25 09:00:00"
+    },
+    {
+      "entry_id": 94,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 150,
+      "reason": "지하철 이용 (역삼역 → 강남역)",
+      "meta_json": "{\"activity\": \"subway\", \"distance\": 1.8, \"co2_saved\": 150}",
+      "created_at": "2024-01-25 18:30:00"
+    },
+    {
+      "entry_id": 95,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "EARN",
+      "points": 100,
+      "reason": "일일 챌린지 완료",
+      "meta_json": "{\"challenge_type\": \"daily\", \"challenge_id\": 3}",
+      "created_at": "2024-01-25 23:59:00"
+    },
+    {
+      "entry_id": 96,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 8}",
+      "created_at": "2024-01-24 10:00:00"
+    },
+    {
+      "entry_id": 97,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 9}",
+      "created_at": "2024-01-25 10:00:00"
+    },
+    {
+      "entry_id": 98,
+      "user_id": 1,
+      "ref_log_id": null,
+      "type": "SPEND",
+      "points": -10,
+      "reason": "GARDEN_WATERING",
+      "meta_json": "{\"garden_id\": 1, \"watering_count\": 10}",
+      "created_at": "2024-01-26 10:00:00"
+    }
+  ],
+  "dashboard_stats": [],
+  "garden_levels": [
+    {
+      "level_id": 1,
+      "level_number": 1,
+      "level_name": "씨앗 단계",
+      "image_path": "/0.png",
+      "required_waters": 10,
+      "description": "작은 씨앗이 땅에 심어졌습니다"
+    },
+    {
+      "level_id": 2,
+      "level_number": 2,
+      "level_name": "싹 트는 단계",
+      "image_path": "/1.png",
+      "required_waters": 10,
+      "description": "작은 싹이 돋아나기 시작했습니다"
+    },
+    {
+      "level_id": 3,
+      "level_number": 3,
+      "level_name": "새싹 단계",
+      "image_path": "/2.png",
+      "required_waters": 10,
+      "description": "초록 새싹이 자라나고 있습니다"
+    },
+    {
+      "level_id": 4,
+      "level_number": 4,
+      "level_name": "어린 줄기 단계",
+      "image_path": "/3.png",
+      "required_waters": 10,
+      "description": "줄기가 자라나고 있습니다"
+    },
+    {
+      "level_id": 5,
+      "level_number": 5,
+      "level_name": "잎 전개 단계",
+      "image_path": "/4.png",
+      "required_waters": 10,
+      "description": "잎이 펼쳐지기 시작했습니다"
+    },
+    {
+      "level_id": 6,
+      "level_number": 6,
+      "level_name": "꽃봉오리 단계",
+      "image_path": "/5.png",
+      "required_waters": 10,
+      "description": "꽃봉오리가 맺혔습니다"
+    },
+    {
+      "level_id": 7,
+      "level_number": 7,
+      "level_name": "꽃 단계",
+      "image_path": "/6.png",
+      "required_waters": 10,
+      "description": "아름다운 꽃이 피었습니다"
+    },
+    {
+      "level_id": 8,
+      "level_number": 8,
+      "level_name": "어린 나무 단계",
+      "image_path": "/7.png",
+      "required_waters": 10,
+      "description": "작은 나무가 되었습니다"
+    },
+    {
+      "level_id": 9,
+      "level_number": 9,
+      "level_name": "자라는 나무 단계",
+      "image_path": "/8.png",
+      "required_waters": 10,
+      "description": "나무가 더욱 자라고 있습니다"
+    },
+    {
+      "level_id": 10,
+      "level_number": 10,
+      "level_name": "우거진 나무 단계",
+      "image_path": "/9.png",
+      "required_waters": 10,
+      "description": "우거진 나무가 되었습니다"
+    },
+    {
+      "level_id": 11,
+      "level_number": 11,
+      "level_name": "정원 완성 단계",
+      "image_path": "/10.png",
+      "required_waters": 10,
+      "description": "완벽한 정원이 완성되었습니다"
+    }
+  ],
+  "garden_watering_logs": [],
+  "ingest_sources": [
+    {
+      "source_id": 1,
+      "source_name": "manual",
+      "description": "사용자 직접 입력"
+    },
+    {
+      "source_id": 2,
+      "source_name": "api",
+      "description": "외부 API 연동"
+    },
+    {
+      "source_id": 3,
+      "source_name": "app",
+      "description": "모바일 앱"
+    }
+  ],
+  "mobility_logs": [
+    {
+      "log_id": 1,
+      "user_id": 1,
+      "source_id": 1,
+      "mode": "SUBWAY",
+      "distance_km": 8.5,
+      "started_at": "2024-01-15 08:00:00",
+      "ended_at": "2024-01-15 08:30:00",
+      "co2_saved_g": 150.0,
+      "points_earned": 150,
+      "description": "지하철 이용",
+      "start_point": "강남역",
+      "end_point": "홍대입구역",
+      "created_at": "2025-09-17 16:37:08"
+    },
+    {
+      "log_id": 2,
+      "user_id": 1,
+      "source_id": 1,
+      "mode": "BIKE",
+      "distance_km": 5.2,
+      "started_at": "2024-01-15 18:00:00",
+      "ended_at": "2024-01-15 18:30:00",
+      "co2_saved_g": 80.0,
+      "points_earned": 80,
+      "description": "자전거 이용",
+      "start_point": "홍대입구역",
+      "end_point": "신촌역",
+      "created_at": "2025-09-17 16:37:08"
+    },
+    {
+      "log_id": 3,
+      "user_id": 1,
+      "source_id": 1,
+      "mode": "WALK",
+      "distance_km": 1.5,
+      "started_at": "2024-01-15 19:00:00",
+      "ended_at": "2024-01-15 19:15:00",
+      "co2_saved_g": 50.0,
+      "points_earned": 50,
+      "description": "도보 이동",
+      "start_point": "신촌역",
+      "end_point": "이대역",
+      "created_at": "2025-09-17 16:37:08"
+    }
+  ],
+  "user_achievements": [
+    {
+      "user_id": 1,
+      "achievement_id": 1,
+      "granted_at": "2024-01-01 00:00:00"
+    },
+    {
+      "user_id": 1,
+      "achievement_id": 2,
+      "granted_at": "2024-01-05 00:00:00"
+    },
+    {
+      "user_id": 1,
+      "achievement_id": 3,
+      "granted_at": "2024-01-10 00:00:00"
+    },
+    {
+      "user_id": 1,
+      "achievement_id": 4,
+      "granted_at": "2024-01-15 00:00:00"
+    }
+  ],
+  "user_gardens": [
+    {
+      "garden_id": 1,
+      "user_id": 1,
+      "current_level_id": 3,
+      "waters_count": 7,
+      "total_waters": 27,
+      "created_at": "2025-09-17 16:37:08",
+      "updated_at": "2025-09-17 16:37:08"
+    },
+    {
+      "garden_id": 2,
+      "user_id": 2,
+      "current_level_id": 2,
+      "waters_count": 4,
+      "total_waters": 14,
+      "created_at": "2025-09-17 16:37:08",
+      "updated_at": "2025-09-17 16:37:08"
+    },
+    {
+      "garden_id": 3,
+      "user_id": 3,
+      "current_level_id": 4,
+      "waters_count": 12,
+      "total_waters": 42,
+      "created_at": "2025-09-17 16:37:08",
+      "updated_at": "2025-09-17 16:37:08"
+    }
+  ],
+  "users": [
+    {
+      "user_id": 1,
+      "username": "김에코",
+      "email": "kim.eco@ecooo.com",
+      "created_at": "2025-09-17 16:37:08",
+      "updated_at": "2025-09-17 16:37:08"
+    },
+    {
+      "user_id": 2,
+      "username": "이그린",
+      "email": "lee.green@ecooo.com",
+      "created_at": "2025-09-17 16:37:08",
+      "updated_at": "2025-09-17 16:37:08"
+    },
+    {
+      "user_id": 3,
+      "username": "박지구",
+      "email": "park.earth@ecooo.com",
+      "created_at": "2025-09-17 16:37:08",
+      "updated_at": "2025-09-17 16:37:08"
+    }
+  ]
+}

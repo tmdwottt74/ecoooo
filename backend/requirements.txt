@@ -2,6 +2,10 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 sqlalchemy==2.0.23
 pymysql==1.1.0
+<<<<<<< HEAD
+=======
+mysql-connector-python==8.0.33
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 cryptography==41.0.7
 pydantic==2.5.0
 python-multipart==0.0.6
@@ -12,6 +16,15 @@ reportlab==4.0.7
 jinja2==3.1.2
 weasyprint==60.2
 boto3==1.34.0
+<<<<<<< HEAD
 
 requests
+=======
+requests==2.31.0
+aiofiles==23.2.1
+
+google-api-python-client==2.108.0
+google-search-results==2.4.2
+
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 beautifulsoup4

@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from "react";
+<<<<<<< HEAD
+=======
+import { useLocation } from "react-router-dom";
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 import { useCredits } from "../contexts/CreditsContext";
 import PageHeader from "../components/PageHeader";
 
@@ -577,6 +581,10 @@ interface AchievementData {
 
 const ChallengeAchievements: React.FC = () => {
   const { addCredits } = useCredits();
+<<<<<<< HEAD
+=======
+  const location = useLocation();
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   const [activeTab, setActiveTab] = useState<'challenges' | 'achievements'>('challenges');
   const [challenges, setChallenges] = useState<ChallengeData[]>([]);
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
@@ -885,6 +893,7 @@ const ChallengeAchievements: React.FC = () => {
     return () => clearInterval(interval);
   }, [addCredits]);
 
+<<<<<<< HEAD
   useEffect(() => {
     // 챌린지 데이터 로드
     fetch(`${API_URL}/api/challenges`, { headers: getAuthHeaders() })
@@ -893,6 +902,17 @@ const ChallengeAchievements: React.FC = () => {
         throw new Error("API 실패");
       })
       .then((data) => {
+=======
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // 챌린지 데이터 로드
+      const response = await fetch(`${API_URL}/api/challenges`, { headers: getAuthHeaders() });
+      
+      if (response.ok) {
+        const data = await response.json();
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
         // Map backend's is_joined to frontend's isParticipating
         const mappedChallenges = data.map((c: any) => ({
           id: c.id,
@@ -906,6 +926,7 @@ const ChallengeAchievements: React.FC = () => {
           endDate: c.end_at // Assuming backend sends end_at
         }));
         setChallenges(mappedChallenges);
+<<<<<<< HEAD
       })
       .catch((error) => { // Catch the error object
         console.error("챌린지 데이터 로드 실패:", error);
@@ -928,6 +949,36 @@ const ChallengeAchievements: React.FC = () => {
         setLoading(false);
       });
   }, []);
+=======
+      } else {
+        throw new Error("API 실패");
+      }
+
+      // 업적 데이터 로드
+      const achievementsResponse = await fetch(`${API_URL}/api/achievements`, { headers: getAuthHeaders() });
+      
+      if (achievementsResponse.ok) {
+        const achievementsData = await achievementsResponse.json();
+        setAchievements(achievementsData);
+      } else {
+        throw new Error("API 실패");
+      }
+    } catch (error) {
+      console.error("데이터 로드 실패:", error);
+      setChallenges(dummyChallenges);
+      setAchievements(dummyAchievements);
+    } finally {
+      // 로딩 상태 해제
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (location.pathname === '/challenge-achievements') {
+      loadData();
+    }
+  }, [location.pathname]);
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
   if (loading) {
     return (

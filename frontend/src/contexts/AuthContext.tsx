@@ -1,9 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
+<<<<<<< HEAD
   id: string; // Keep for existing uses if any
   user_id: number; // Add user_id as number
   name: string;
+=======
+  username: string;
+  user_id: number;   // ✅ 이 필드 추가
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   email: string;
   password?: string; // 비밀번호 추가
   phone?: string; // 전화번호 추가
@@ -76,6 +81,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { access_token, token_type, user_id, username, role } = userData;
 
       localStorage.setItem('access_token', access_token);
+<<<<<<< HEAD
       
       const loggedInUser: User = {
         id: user_id.toString(), // Keep for existing uses if any
@@ -84,11 +90,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: email, // Use provided email for consistency
         role: role
       };
+=======
+      localStorage.setItem('userId', user_id); // 사용자 ID 저장 추가
+      
+    const loggedInUser: User = {
+      user_id: user_id ?? 0,   // null/undefined 방지
+      username,
+      email,
+      role,
+    };
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
       localStorage.setItem('eco-user', JSON.stringify(loggedInUser));
       
       setUser(loggedInUser);
       setIsAuthenticated(true);
+<<<<<<< HEAD
+=======
+      sessionStorage.setItem('isFirstLoginInSession', 'true'); // 세션 첫 로그인 플래그
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
       
       return loggedInUser;
     } catch (error) {
@@ -135,7 +155,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+<<<<<<< HEAD
     localStorage.clear(); // 모든 로컬 스토리지 데이터 제거
+=======
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('eco-user');
+    localStorage.removeItem('userId');
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     
     setUser(null);
     setIsAuthenticated(false);

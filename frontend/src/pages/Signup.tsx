@@ -47,7 +47,7 @@ const Signup: React.FC = () => {
       const success = await signup(formData);
       if (success) {
         alert('회원가입이 완료되었습니다!');
-        navigate('/');
+        navigate('/home');
       } else {
         alert('회원가입에 실패했습니다. 다시 시도해주세요.');
       }
@@ -72,7 +72,7 @@ const Signup: React.FC = () => {
       
       localStorage.setItem('eco-user', JSON.stringify(demoUser));
       alert(`${provider} 회원가입이 완료되었습니다!`);
-      navigate('/');
+      navigate('/home');
     } catch (error) {
       alert(`${provider} 회원가입 중 오류가 발생했습니다.`);
     } finally {
@@ -92,8 +92,10 @@ const Signup: React.FC = () => {
       
       <div className="auth-card">
         <div className="auth-header">
-          <Link to="/" className="auth-logo">
-            <h1>ECO 🌱 LIFE</h1>
+          <Link to="/home" className="auth-logo">
+            <div className="logo-container">
+              <img src="/eco1-w.png" alt="ECO LIFE" className="logo-image" />
+            </div>
           </Link>
           <h2>회원가입</h2>
           <p>환경 친화적인 생활을 시작해보세요</p>
@@ -257,7 +259,7 @@ const Signup: React.FC = () => {
               onClick={() => handleSocialSignup('google')}
               disabled={isLoading}
             >
-              <span className="social-icon">🔍</span>
+              <span className="social-icon google-icon">G</span>
               Google로 회원가입
             </button>
             <button 
@@ -266,8 +268,8 @@ const Signup: React.FC = () => {
               onClick={() => handleSocialSignup('kakao')}
               disabled={isLoading}
             >
-              <span className="social-icon">💬</span>
-              Kakao로 회원가입
+              <span className="social-icon kakao-icon">K</span>
+              카카오로 회원가입
             </button>
           </div>
 

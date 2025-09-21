@@ -136,30 +136,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     bottom: 0,
     zIndex: 1,
   },
-  floatingElement1: {
-    position: "absolute",
-    top: "20%",
-    left: "10%",
-    fontSize: "3rem",
-    animation: "float 6s ease-in-out infinite",
-    opacity: 0.7,
-  },
-  floatingElement2: {
-    position: "absolute",
-    top: "60%",
-    right: "15%",
-    fontSize: "2.5rem",
-    animation: "float 8s ease-in-out infinite reverse",
-    opacity: 0.6,
-  },
-  floatingElement3: {
-    position: "absolute",
-    top: "30%",
-    right: "5%",
-    fontSize: "2rem",
-    animation: "float 7s ease-in-out infinite",
-    opacity: 0.5,
-  },
 
   container: {
     maxWidth: "1200px",
@@ -284,10 +260,6 @@ const styles: { [key: string]: React.CSSProperties } = {
 // CSS 애니메이션 추가
 const styleSheet = document.createElement("style");
 styleSheet.textContent = `
-  @keyframes float {
-    0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(5deg); }
-  }
   
   .card:hover {
     transform: translateY(-10px) scale(1.02);

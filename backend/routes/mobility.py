@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+<<<<<<< HEAD
 from datetime import datetime
 from typing import Optional
+=======
+from datetime import datetime, timedelta # Added timedelta
+from typing import Optional, List # Added List
+from sqlalchemy import func # Added func
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
 from .. import schemas, models
 from ..database import get_db
@@ -111,3 +117,46 @@ async def log_mobility_data(
         start_point=db_mobility_log.start_point,
         end_point=db_mobility_log.end_point,
     )
+<<<<<<< HEAD
+=======
+
+# Statistical endpoints from Kim Kyuri version, adapted for ORM and authentication
+@router.get("/stats/mode", response_model=List[schemas.ModeStat])
+async def get_mode_stats(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    교통수단별 절감량(co2_saved_g 합계)을 반환합니다.
+    """
+    user_id = current_user.user_id
+    mode_stats = db.query( # Use ORM
+        models.MobilityLog.mode,
+        func.sum(models.MobilityLog.co2_saved_g)
+    ).filter(
+        models.MobilityLog.user_id == user_id
+    ).group_by(
+        models.MobilityLog.mode
+    ).all()
+
+    return [schemas.ModeStat(mode=mode, saved_g=float(saved_g)) for mode, saved_g in mode_stats]
+
+@router.get("/stats/daily", response_model=List[schemas.DailySaving])
+async def get_daily_savings(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    최근 7일간 일별 절감량(co2_saved_g 합계)을 반환합니다.
+    """
+    user_id = current_user.user_id
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+
+    daily_savings = db.query( # Use ORM
+        func.date(models.MobilityLog.created_at),
+        func.sum(models.MobilityLog.co2_saved_g)
+    ).filter(
+        models.MobilityLog.user_id == user_id,
+        models.MobilityLog.created_at >= seven_days_ago
+    ).group_by(
+        func.date(models.MobilityLog.created_at)
+    ).order_by(
+        func.date(models.MobilityLog.created_at)
+    ).all()
+
+    return [schemas.DailySaving(date=str(date), saved_g=float(saved_g)) for date, saved_g in daily_savings]
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5

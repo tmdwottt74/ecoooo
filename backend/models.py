@@ -7,6 +7,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import JSON
 from sqlalchemy.orm import relationship
 
+# database.py에서 Base를 import (순환참조 해결)
 from .database import Base  # Declarative Base
 
 
@@ -36,13 +37,30 @@ class CreditType(str, enum.Enum):
     SPEND = "SPEND"
     ADJUST = "ADJUST"
 
+<<<<<<< HEAD
 class ChallengeCompletionType(str, enum.Enum):
     AUTO = "AUTO"
     MANUAL = "MANUAL"
+=======
+class ChatLog(Base):
+    __tablename__ = "chat_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(BigInteger, ForeignKey("users.user_id", ondelete="CASCADE"))
+    user_message = Column(String(500))
+    bot_response = Column(String(1000))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="chat_logs")
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
 class ChallengeScope(str, enum.Enum):
     PERSONAL = "PERSONAL"
     GROUP = "GROUP"
+
+class ChallengeCompletionType(str, enum.Enum):
+    MANUAL = "MANUAL"
+    AUTOMATIC = "AUTOMATIC"
 
 class NotificationStatus(str, enum.Enum):
     PENDING = "PENDING"
@@ -78,10 +96,11 @@ class User(Base):
     email = Column(String(120), unique=True)
     password_hash = Column(String(255))
     user_group_id = Column(BigInteger, ForeignKey("user_groups.group_id"))
-    role = Column(Enum(UserRole), default=UserRole.USER)
+    role = Column(Enum(UserRole, name = "user_role"), default=UserRole.USER)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
+    chat_logs = relationship("ChatLog", back_populates="user")
     group = relationship("UserGroup", backref="users")
     mobility_logs = relationship("MobilityLog", backref="user")
     credits = relationship("CreditsLedger", backref="user")
@@ -167,10 +186,17 @@ class Challenge(Base):
     title = Column(String(100), nullable=False)
     description = Column(String(255))
     scope = Column(Enum(ChallengeScope), default=ChallengeScope.PERSONAL)
+<<<<<<< HEAD
     completion_type = Column(Enum(ChallengeCompletionType), default=ChallengeCompletionType.AUTO)
     target_mode = Column(Enum(TransportMode), default=TransportMode.ANY)
     target_saved_g = Column(Numeric(12, 3), nullable=True, default=0)
     target_distance_km = Column(Numeric(8, 3), nullable=True, default=0)
+=======
+    completion_type = Column(Enum(ChallengeCompletionType), default=ChallengeCompletionType.AUTOMATIC)
+    target_mode = Column(Enum(TransportMode), default=TransportMode.ANY)
+    target_saved_g = Column(Integer, nullable=True) # Make nullable
+    target_distance_km = Column(Numeric(10, 3), nullable=True) # New field
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     start_at = Column(DateTime, nullable=False)
     end_at = Column(DateTime, nullable=False)
     reward = Column(String(255), nullable=True) # Add reward field
@@ -295,6 +321,7 @@ class GardenWateringLog(Base):
     # Relationships
     user = relationship("User", backref="watering_logs")
 
+<<<<<<< HEAD
 # ---------------------------
 # REWARDED ACTIVITIES (For Chatbot)
 # ---------------------------
@@ -307,3 +334,18 @@ class RewardedActivity(Base):
     bonus_credits = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+=======
+# User Session State
+class UserSessionState(Base):
+    __tablename__ = "user_session_states"
+    
+    state_id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, ForeignKey("users.user_id"), nullable=False)
+    session_key = Column(String(100), nullable=False)  # e.g., 'chat_messages', 'active_tab'
+    session_data = Column(JSON, nullable=False)  # JSON 형태로 상태 데이터 저장
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User", backref="session_states")
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5

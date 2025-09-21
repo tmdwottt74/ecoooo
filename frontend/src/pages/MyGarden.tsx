@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useCredits } from "../contexts/CreditsContext";
 import { useUser } from "../contexts/UserContext";
+<<<<<<< HEAD
+=======
+import { useLoading } from "../contexts/LoadingContext";
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 import PageHeader from "../components/PageHeader";
 import { getAuthHeaders } from "../contexts/CreditsContext";
 import "./MyGarden.css";
@@ -39,10 +44,15 @@ const getPlantStage = (level: number): string =>
 const MyGarden: React.FC = () => {
   const { creditsData, waterGarden, refreshCredits } = useCredits(); // fetchCreditsData 추가
   const { user } = useUser();
+<<<<<<< HEAD
+=======
+  const { showLoading, hideLoading } = useLoading();
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   const [gardenStatus, setGardenStatus] = useState<GardenStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [animate, setAnimate] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const location = useLocation();
 
   const fetchGardenData = async () => {
     if (!user || !user.id) {
@@ -50,6 +60,11 @@ const MyGarden: React.FC = () => {
       setLoading(false);
       return;
     }
+<<<<<<< HEAD
+=======
+    
+    showLoading("정원 정보를 불러오는 중...");
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     try {
       const response = await fetch(
         `http://127.0.0.1:8000/api/credits/garden/${user.id}`,
@@ -65,22 +80,44 @@ const MyGarden: React.FC = () => {
       setStatusMessage("정원 정보를 불러오는 데 실패했습니다.");
     } finally {
       setLoading(false);
+<<<<<<< HEAD
+=======
+      hideLoading();
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     }
   };
 
   useEffect(() => {
+<<<<<<< HEAD
     fetchGardenData();
   }, [user]); // user가 변경될 때마다 다시 불러오기
+=======
+    // '나만의 정원' 페이지에 있을 때만 데이터를 새로고침합니다.
+    // 이렇게 하면 다른 페이지에 있다가 돌아왔을 때 항상 최신 정보를 보장합니다.
+    if (location.pathname === '/mygarden') {
+      fetchGardenData();
+      refreshCredits();
+    }
+  }, [user, location.pathname]); // 사용자가 바뀌거나 경로가 변경될 때마다 실행
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
   const handleWater = async () => {
     if (!gardenStatus) return;
     
     // 크레딧이 부족한지 먼저 체크
     if (creditsData.totalCredits < WATER_COST) {
+<<<<<<< HEAD
       setStatusMessage("크레딧이 부족합니다!");
       return;
     }
 
+=======
+      alert("크레딧이 부족합니다!");
+      return;
+    }
+
+    showLoading("물주기 중...");
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     setAnimate(true);
     setTimeout(() => setAnimate(false), 500);
 
@@ -101,14 +138,28 @@ const MyGarden: React.FC = () => {
     } catch (error) {
       console.error("물주기 실패:", error);
       setStatusMessage("물주기에 실패했습니다.");
+    } finally {
+      hideLoading();
     }
   };
 
   if (loading) {
     return (
       <div className="garden-card">
+<<<<<<< HEAD
         <div style={{ textAlign: 'center', padding: '3rem' }}>
           <div className="spinner">불러오는 중...</div>
+=======
+        <PageHeader 
+          title="나만의 정원" 
+          subtitle="크레딧으로 가상 정원을 꾸며보세요"
+          icon="🌿"
+        />
+        <div className="garden-content">
+          <div style={{ textAlign: 'center', padding: '3rem' }}>
+            <div className="loading-placeholder">정원을 준비하고 있습니다...</div>
+          </div>
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
         </div>
       </div>
     );

@@ -36,6 +36,7 @@ C:/Users/coron/OneDrive/바탕 화면/2025.2-2/seoul25_AI_ht/gitHub/ecoooo_front
 └───README.md (현재 파일)
 ```
 
+<<<<<<< HEAD
 (규리 새로 추가)
 statistics.py
 websocket.py
@@ -50,6 +51,10 @@ LoadingContext.tsx
 
 ## 프로젝트 설정 및 실행 방법
 
+=======
+## 프로젝트 설정 및 실행 방법
+
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 프로젝트를 로컬에서 실행하려면 다음 단계를 따르십시오.
 
 ### 1. 가상 환경 설정 (Python Backend)
@@ -115,6 +120,46 @@ npm install
   AWS Bedrock 설정 (챗봇 기능에 필요)
   BEDROCK_MODEL_ARN="BEDROCK_MODEL_ARN", "arn:aws:bedrock:us-east-1:327784329358:inference-profile/us.anthropic.claude-opus-4-20250514-v1:0"
   BEDROCK_KNOWLEDGE_BASE_ID="BEDROCK_KNOWLEDGE_BASE_ID", "PUGB1AL6L1"
+<<<<<<< HEAD
+=======
+
+
+  (선택 사항) SQLite 사용 시 DATABASE_URL을 명시적으로 설정할 수 있습니다.
+  DATABASE_URL=sqlite:///./backend/ecoooo.db
+```
+
+프론트엔드 폴더 (`C:\Users\coron\OneDrive\바탕 화면\2025.2-2\seoul25_AI_ht\gitHub\ecoooo_front_ver\ecoooo\frontend`)에도 `.env` 파일을 생성하고 다음을 추가하십시오:
+
+```dotenv
+REACT_APP_API_URL=http://127.0.0.1:8000
+```
+(백엔드가 다른 주소에서 실행되는 경우 `REACT_APP_API_URL` 값을 조정하십시오.)
+
+### 5. 프로젝트 실행
+
+#### 백엔드 실행
+
+루트 폴더로 이동하여 (가상 환경이 활성화된 상태에서) 다음 명령을 실행합니다.
+```bash
+uvicorn backend.main:app --reload
+```
+백엔드 서버가 시작되면 데이터베이스 테이블이 생성되고 초기 데이터(관리자 사용자, 챌린지 등)가 자동으로 시딩됩니다.
+
+#### 프론트엔드 실행
+
+새로운 터미널을 열고 프론트엔드 폴더로 이동하여 다음 명령을 실행합니다.
+```bash
+cd frontend
+npm start
+# 또는
+# yarn start
+```
+프론트엔드 개발 서버가 시작되고 웹 브라우저에서 애플리케이션에 접근할 수 있습니다.
+
+### 6. 기능 테스트 및 검토
+
+모든 기능(챌린지, 챗봇, 대시보드, 크레딧, 사용자 인증, 정원 등)이 예상대로 작동하는지 철저히 테스트하십시오. 특히 통합된 부분에서 문제가 없는지 확인하는 것이 중요합니다.
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
 
   (선택 사항) SQLite 사용 시 DATABASE_URL을 명시적으로 설정할 수 있습니다.

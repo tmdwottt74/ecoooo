@@ -24,8 +24,13 @@ class ChallengeScope(str, Enum):
     GROUP = "GROUP"
 
 class ChallengeCompletionType(str, Enum):
+<<<<<<< HEAD
     AUTO = "AUTO"
     MANUAL = "MANUAL"
+=======
+    MANUAL = "MANUAL"
+    AUTOMATIC = "AUTOMATIC"
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
 class GardenStatusEnum(str, Enum):
     IN_PROGRESS = "IN_PROGRESS"
@@ -149,7 +154,11 @@ class Challenge(BaseModel):
     target_distance_km: Optional[float] = None
     start_at: datetime
     end_at: datetime
+<<<<<<< HEAD
     reward: Optional[str] = None
+=======
+    reward: Optional[str] = None # Added reward field
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     created_by: Optional[int] = None
     created_at: datetime
 
@@ -163,8 +172,12 @@ class ChallengeBase(BaseModel):
     description: Optional[str] = None
     scope: ChallengeScope
     target_mode: TransportMode
+<<<<<<< HEAD
     target_saved_g: Optional[float] = None
     target_distance_km: Optional[float] = None
+=======
+    target_saved_g: int
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     start_at: datetime
     end_at: datetime
     reward: Optional[str] = None
@@ -178,10 +191,17 @@ class FrontendChallenge(BaseModel):
     description: Optional[str] = None
     progress: int # Percentage
     reward: Optional[str] = None
+<<<<<<< HEAD
     is_joined: bool
     completion_type: ChallengeCompletionType
     completed_at: Optional[datetime] = None
     target_mode: TransportMode
+=======
+    is_joined: bool # New field
+    completion_type: Optional[ChallengeCompletionType] = None
+    completed_at: Optional[datetime] = None
+    target_mode: Optional[TransportMode] = None
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     target_saved_g: Optional[float] = None
     target_distance_km: Optional[float] = None
 
@@ -191,8 +211,12 @@ class ChallengeRecommendationRequest(BaseModel):
     description: Optional[str] = None
     scope: ChallengeScope
     target_mode: TransportMode
+<<<<<<< HEAD
     target_saved_g: Optional[float] = None
     target_distance_km: Optional[float] = None
+=======
+    target_saved_g: int
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
     start_at: datetime
     end_at: datetime
     reward: Optional[str] = None
@@ -230,7 +254,11 @@ class User(BaseModel):
 
 class UserRead(User):
     class Config:
+<<<<<<< HEAD
         orm_mode = True
+=======
+        from_attributes = True 
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
         exclude = {"password_hash"}
 
 class UserCreate(BaseModel):
@@ -317,6 +345,69 @@ class AddPointsRequest(BaseModel):
     points: int
     reason: str
 
+<<<<<<< HEAD
+=======
+# 통계 관련 스키마
+class StatisticsOverview(BaseModel):
+    total_users: int
+    total_credits: int
+    total_carbon_saved_kg: float
+    national_average_carbon_kg: float
+    active_users_30days: int
+    average_garden_level: float
+    last_updated: datetime
+    class Config:
+        from_attributes = True
+
+class RegionalStatistics(BaseModel):
+    region: str
+    user_count: int
+    average_carbon_kg: float
+    total_carbon_saved_kg: float
+    air_quality_index: int
+    green_space_index: int
+    public_transport_index: int
+    recycling_rate_index: int
+    overall_score: int
+    last_updated: datetime
+    class Config:
+        from_attributes = True
+
+class LeaderboardEntry(BaseModel):
+    rank: int
+    user_id: int
+    name: str
+    total_credits: int
+    carbon_reduced_kg: float
+    badge_count: int
+    is_current_user: bool
+    class Config:
+        from_attributes = True
+
+class FriendsComparison(BaseModel):
+    user_id: int
+    user_credits: int
+    user_carbon_kg: float
+    friends_average_credits: float
+    friends_average_carbon_kg: float
+    national_average_carbon_kg: float
+    user_rank: int
+    total_users: int
+    percentile: float
+    last_updated: datetime
+    class Config:
+        from_attributes = True
+
+class UserRanking(BaseModel):
+    user_id: int
+    rank: int
+    total_users: int
+    percentile: float
+    last_updated: datetime
+    class Config:
+        from_attributes = True
+
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 class MobilityLogResponse(BaseModel):
     log_id: int
     user_id: int

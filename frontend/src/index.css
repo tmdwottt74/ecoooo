@@ -9,6 +9,29 @@
   --background-dark: #2c3e50;
   --grey-accent: #ecf0f1;
   --border-radius: 15px;
+  
+  /* 반응형 브레이크포인트 */
+  --mobile: 480px;
+  --tablet: 768px;
+  --desktop: 1024px;
+  --large-desktop: 1200px;
+  
+  /* 반응형 간격 */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  
+  /* 반응형 폰트 크기 */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+  --font-2xl: 1.5rem;
+  --font-3xl: 1.875rem;
+  --font-4xl: 2.25rem;
 }
 
 body {
@@ -80,4 +103,82 @@ button {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+/* 반응형 유틸리티 클래스 */
+.responsive-grid {
+  display: grid;
+  gap: var(--spacing-md);
+  grid-template-columns: 1fr;
+}
+
+.responsive-flex {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.responsive-text {
+  font-size: var(--font-base);
+  line-height: 1.6;
+}
+
+.responsive-padding {
+  padding: var(--spacing-md);
+}
+
+.responsive-margin {
+  margin: var(--spacing-md);
+}
+
+/* 반응형 미디어 쿼리 */
+@media (min-width: 480px) {
+  .responsive-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .responsive-flex {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .responsive-text {
+    font-size: var(--font-lg);
+  }
+  
+  .responsive-padding {
+    padding: var(--spacing-lg);
+  }
+  
+  .responsive-margin {
+    margin: var(--spacing-lg);
+  }
+}
+
+@media (min-width: 768px) {
+  .responsive-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .responsive-text {
+    font-size: var(--font-xl);
+  }
+  
+  .responsive-padding {
+    padding: var(--spacing-xl);
+  }
+  
+  .responsive-margin {
+    margin: var(--spacing-xl);
+  }
+}
+
+@media (min-width: 1024px) {
+  .responsive-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .responsive-text {
+    font-size: var(--font-2xl);
+  }
 }

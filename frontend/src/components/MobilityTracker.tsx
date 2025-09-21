@@ -6,7 +6,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext'; // useAuth 임포트
 
+<<<<<<< HEAD
 // [자동 기록 기능 추가] 이동 수단 타입을 정의합니다.
+=======
+// [자동 기록 기능 추가] 이동 수단 타입을 정의합니다。
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 type TransportMode = 'WALK' | 'BIKE' | 'BUS' | 'SUBWAY';
 const TRANSPORT_MODES: TransportMode[] = ['WALK', 'BIKE', 'BUS', 'SUBWAY'];
 
@@ -16,6 +20,14 @@ interface Position {
   lon: number;
 }
 
+<<<<<<< HEAD
+=======
+interface MobilityLogResponse {
+  co2_saved_g: number;
+  eco_credits_earned: number;
+}
+
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 const API_URL = process.env.REACT_APP_API_URL ?? '';
 
 const MobilityTracker: React.FC = () => {
@@ -166,16 +178,27 @@ const MobilityTracker: React.FC = () => {
       }
 
       const url = `${API_URL}/mobility/log`;
+<<<<<<< HEAD
       const response = await axios.post(url, logData, {
+=======
+      const response = await axios.post<MobilityLogResponse>(url, logData, {
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
+<<<<<<< HEAD
         // 필요 시 withCredentials: true
       });
 
       const co2Saved = response?.data?.co2_saved_g;
       const creditsEarned = response?.data?.eco_credits_earned;
+=======
+      });
+
+      const co2Saved = response.data.co2_saved_g;
+      const creditsEarned = response.data.eco_credits_earned;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 
       if (typeof co2Saved === 'number' && typeof creditsEarned === 'number') {
         alert(
@@ -279,7 +302,11 @@ const MobilityTracker: React.FC = () => {
               display: 'flex',
               flexWrap: 'wrap',
               justifyContent: 'center',
+<<<<<<< HEAD
               gap: '10px',
+=======
+              gap: 10,
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
             }}
           >
             {TRANSPORT_MODES.map((mode) => (

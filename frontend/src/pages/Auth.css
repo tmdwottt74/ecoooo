@@ -1,4 +1,58 @@
 /* ==============================
+<<<<<<< HEAD
+=======
+   비밀번호 찾기 페이지 전용 스타일 (회원가입과 유사)
+   ============================== */
+.forgot-password-page {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%);
+}
+
+.forgot-password-page .auth-card {
+  border: 2px solid rgba(26, 188, 156, 0.2);
+  box-shadow: 0 25px 80px rgba(26, 188, 156, 0.15), 0 8px 32px rgba(26, 188, 156, 0.1);
+}
+
+.forgot-password-page .auth-card:hover {
+  box-shadow: 0 30px 100px rgba(26, 188, 156, 0.2), 0 12px 40px rgba(26, 188, 156, 0.15);
+}
+
+.forgot-password-page .decoration-circle {
+  background: linear-gradient(135deg, rgba(26, 188, 156, 0.1), rgba(16, 160, 133, 0.05));
+}
+
+.forgot-password-page h2 {
+  color: #1abc9c;
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.forgot-password-page .auth-btn.primary {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  box-shadow: 0 8px 25px rgba(26, 188, 156, 0.3);
+}
+
+.forgot-password-page .auth-btn.primary:hover {
+  background: linear-gradient(135deg, #16a085, #138d75);
+  box-shadow: 0 12px 35px rgba(26, 188, 156, 0.4);
+}
+
+.forgot-password-page .input-container input:focus {
+  border-color: #1abc9c;
+  box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
+}
+
+.forgot-password-page .auth-link {
+  color: #1abc9c;
+}
+
+.forgot-password-page .auth-link:hover {
+  color: #16a085;
+}
+
+/* ==============================
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
    인증 페이지 공통 스타일
    ============================== */
 .auth-container {
@@ -9,6 +63,10 @@
   background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #d1fae5 100%);
   position: relative;
   overflow: hidden;
+<<<<<<< HEAD
+=======
+  padding: 20px;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 }
 
 .auth-background {
@@ -34,25 +92,42 @@
 }
 
 .circle-1 {
+<<<<<<< HEAD
   width: 14vw;
   height: 14vw;
+=======
+  width: 200px;
+  height: 200px;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   top: 10%;
   left: 10%;
   animation-delay: 0s;
 }
 
 .circle-2 {
+<<<<<<< HEAD
   width: 10vw;
   height: 10vw;
   top: 65%;
+=======
+  width: 150px;
+  height: 150px;
+  top: 60%;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   right: 15%;
   animation-delay: 2s;
 }
 
 .circle-3 {
+<<<<<<< HEAD
   width: 7vw;
   height: 7vw;
   top: 35%;
+=======
+  width: 100px;
+  height: 100px;
+  top: 30%;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   right: 30%;
   animation-delay: 4s;
 }
@@ -67,6 +142,7 @@
 }
 
 .auth-card {
+<<<<<<< HEAD
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   border-radius: 24px;
@@ -77,6 +153,24 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
   z-index: 2;
+=======
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 28px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(26, 188, 156, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+.auth-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.1), 0 12px 40px rgba(26, 188, 156, 0.15);
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 }
 
 .auth-header {
@@ -91,6 +185,7 @@
   margin-bottom: 24px;
 }
 
+<<<<<<< HEAD
 .auth-logo h1 {
   font-size: 3rem; /* 폰트 크기 증가 */
   font-weight: 800;
@@ -100,6 +195,44 @@
   background-clip: text;
   margin: 0;
   text-shadow: 0 2px 4px rgba(26, 188, 156, 0.3);
+=======
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.logo-image {
+  height: 90px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(26, 188, 156, 0.2));
+  transition: all 0.3s ease;
+  animation: logoFloat 3s ease-in-out infinite;
+  background: transparent;
+  border-radius: 8px;
+  padding: 5px;
+}
+
+.logo-image:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 6px 16px rgba(26, 188, 156, 0.3));
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-3px); }
+}
+
+.logo-tagline {
+  font-size: 1rem;
+  color: #6c757d;
+  margin: 0;
+  font-style: italic;
+  font-weight: 500;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 }
 
 .auth-header h2 {
@@ -142,6 +275,7 @@
 
 .input-container input {
   width: 100%;
+<<<<<<< HEAD
   padding: 20px 55px 20px 20px; /* 패딩 증가 */
   border: 2px solid #e9ecef;
   border-radius: 12px;
@@ -149,12 +283,32 @@
   background: #fff;
   transition: all 0.3s ease;
   box-sizing: border-box;
+=======
+  padding: 18px 50px 18px 18px;
+  border: 2px solid #e9ecef;
+  border-radius: 14px;
+  font-size: 1.1rem;
+  background: #fff;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 }
 
 .input-container input:focus {
   outline: none;
   border-color: #1abc9c;
+<<<<<<< HEAD
   box-shadow: 0 0 0 3px rgba(26, 188, 156, 0.1);
+=======
+  box-shadow: 0 0 0 4px rgba(26, 188, 156, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.input-container input:hover {
+  border-color: #d1fae5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 }
 
 .input-container input::placeholder {
@@ -341,15 +495,50 @@
 .social-btn.google:hover {
   border-color: #db4437;
   background: #fef7f7;
+<<<<<<< HEAD
+=======
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(219, 68, 55, 0.2);
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 }
 
 .social-btn.kakao:hover {
   border-color: #fee500;
+<<<<<<< HEAD
   background: #fffef0;
+=======
+  background: #fffbf0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(254, 229, 0, 0.2);
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 }
 
 .social-icon {
   font-size: 1.2rem;
+<<<<<<< HEAD
+=======
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.google-icon {
+  background: #db4437;
+  color: white;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.kakao-icon {
+  background: #fee500;
+  color: #3c1e1e;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 1rem;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 }
 
 .auth-footer {
@@ -373,6 +562,47 @@
   text-decoration: underline;
 }
 
+<<<<<<< HEAD
+=======
+/* ==============================
+   비밀번호 찾기 페이지 스타일
+   ============================== */
+.success-message {
+  text-align: center;
+  padding: 32px 0;
+}
+
+.success-icon {
+  font-size: 4rem;
+  margin-bottom: 24px;
+  animation: successBounce 0.6s ease-out;
+}
+
+@keyframes successBounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.success-message p {
+  font-size: 1.1rem;
+  color: #2c3e50;
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+.success-message strong {
+  color: #1abc9c;
+  font-weight: 700;
+}
+
+.success-subtext {
+  font-size: 0.95rem;
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .auth-container {
@@ -384,8 +614,19 @@
     max-width: 100%;
   }
   
+<<<<<<< HEAD
   .auth-logo h1 {
     font-size: 2rem;
+=======
+  .logo-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .logo-image {
+    height: 60px;
+    max-width: 150px;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   }
   
   .auth-header h2 {
@@ -413,8 +654,14 @@
     padding: 24px 20px;
   }
   
+<<<<<<< HEAD
   .auth-logo h1 {
     font-size: 1.8rem;
+=======
+  .logo-image {
+    height: 50px;
+    max-width: 120px;
+>>>>>>> 20cdeef2606b3074ac01baad216e4ea7dbd897d5
   }
   
   .input-container input {
